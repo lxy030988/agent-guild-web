@@ -46,8 +46,13 @@ apiClient.interceptors.response.use(
 		if (error.response?.status === 401) {
 			localStorage.removeItem("access_token")
 			localStorage.removeItem("user")
-			// 可以在这里触发跳转到登录页
-			window.location.href = "/login"
+
+			// 触发全局事件，让 UI 弹出登录提示
+			window.dispatchEvent(
+				new CustomEvent("app:unauthorized", {
+					detail: { message: "Session expired. Please sign in again." },
+				}),
+			)
 		}
 
 		return Promise.reject(error)

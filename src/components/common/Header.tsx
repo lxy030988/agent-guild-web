@@ -1,7 +1,3 @@
-import { LogOut, Sparkles, User, Wallet } from "lucide-react"
-import { memo, useEffect, useRef } from "react"
-import { Link, useNavigate } from "react-router-dom"
-import { useAccount, useConnect, useDisconnect, useEnsName } from "wagmi"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,6 +10,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/hooks/useAuth"
 import { useWeb3Login } from "@/hooks/useWeb3Login"
+import { LogOut, Sparkles, User, Wallet } from "lucide-react"
+import { memo, useCallback, useEffect, useRef } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { useAccount, useConnect, useDisconnect, useEnsName } from "wagmi"
 
 const Header = () => {
 	const navigate = useNavigate()
@@ -41,7 +41,7 @@ const Header = () => {
 	}, [isConnected, address, isAuthenticated, web3Login])
 
 	// 统一登录处理：连接钱包 + 签名登录
-	const handleSignLogin = async () => {
+	const handleSignLogin = useCallback(async () => {
 		if (!isConnected) {
 			pendingLogin.current = true
 			const metamaskConnector = connectors.find(
@@ -62,7 +62,27 @@ const Header = () => {
 		} catch (err) {
 			console.error("Login failed:", err)
 		}
-	}
+	}, [isConnected, connectors, connect, web3Login])
+
+	// 监听全局未授权事件，弹出登录提示
+	useEffect(() => {
+		const handleUnauthorized = (event: Event) => {
+			const customEvent = event as CustomEvent
+			const message = customEvent.detail?.message || "Session expired."
+			if (window.confirm(`${message}\n\nWould you like to sign in again?`)) {
+				// 调用登录逻辑
+				handleSignLogin()
+			} else {
+				// 用户取消，可以重定向到主页或保持现状
+				navigate("/")
+			}
+		}
+
+		window.addEventListener("app:unauthorized", handleUnauthorized)
+		return () => {
+			window.removeEventListener("app:unauthorized", handleUnauthorized)
+		}
+	}, [handleSignLogin, navigate])
 
 	// 退出登录
 	const handleLogout = () => {
