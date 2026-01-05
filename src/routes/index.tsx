@@ -1,15 +1,14 @@
-import { Loading, PageNotFoundView } from "@/components/common"
-import MainLayout from "@/layouts/Layout"
 import { lazy, Suspense } from "react"
 import type { RouteObject } from "react-router-dom"
+import { Loading, PageNotFoundView } from "@/components/common"
+import MainLayout from "@/layouts/Layout"
 
 const Home = lazy(() => import("@/pages/Home"))
-const About = lazy(() => import("@/pages/About"))
+
 const Demo = lazy(() => import("@/pages/Demo"))
 
-const TransformExample = lazy(() => import("@/examples/TransformExample"))
-
 const StorageDemo = lazy(() => import("@/pages/StorageDemo"))
+const ContractDemo = lazy(() => import("@/pages/ContractDemo"))
 
 const routes: RouteObject[] = [
 	{
@@ -24,14 +23,7 @@ const routes: RouteObject[] = [
 					</Suspense>
 				),
 			},
-			{
-				path: "about",
-				element: (
-					<Suspense fallback={<Loading />}>
-						<About />
-					</Suspense>
-				),
-			},
+
 			{
 				path: "demo",
 				element: (
@@ -42,18 +34,18 @@ const routes: RouteObject[] = [
 			},
 
 			{
-				path: "transform-example",
-				element: (
-					<Suspense fallback={<Loading />}>
-						<TransformExample />
-					</Suspense>
-				),
-			},
-			{
 				path: "storage-demo",
 				element: (
 					<Suspense fallback={<Loading />}>
 						<StorageDemo />
+					</Suspense>
+				),
+			},
+			{
+				path: "contract-demo",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<ContractDemo />
 					</Suspense>
 				),
 			},

@@ -7,7 +7,7 @@ const Header = () => {
 			<nav className="mx-auto px-4 py-4">
 				<div className="flex items-center justify-between">
 					<Link to="/" className="text-2xl font-bold text-blue-600">
-						ReactTemplate
+						Agent Guild
 					</Link>
 					<ul className="flex items-center gap-6">
 						<li>
@@ -20,19 +20,18 @@ const Header = () => {
 						</li>
 						<li>
 							<Link
-								to="/about"
+								to="/demo"
 								className="text-gray-700 hover:text-blue-600 transition-colors"
 							>
-								About
+								🎨 Demo
 							</Link>
 						</li>
-
 						<li>
 							<Link
-								to="/transform-example"
+								to="/contract-demo"
 								className="text-gray-700 hover:text-blue-600 transition-colors"
 							>
-								Transform Example
+								📝 Contract
 							</Link>
 						</li>
 

@@ -32,7 +32,7 @@ module.exports = {
 		assetModuleFilename: "images/[name].[ext]",
 	},
 	plugins: [
-		new BundleAnalyzerPlugin(),
+		// new BundleAnalyzerPlugin(),
 
 		new HtmlWebpackPlugin({
 			filename: "index.html",

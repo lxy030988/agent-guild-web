@@ -50,16 +50,7 @@ const webpackBaseConfig = {
 				use: [
 					MiniCssExtractPlugin.loader,
 					// 'style-loader',
-					{ loader: "css-loader", options: { importLoaders: 2 } },
-					// 自定义 loader：转换 matrix3d 为可读的 transform 函数
-					// 注意：loader 从下到上执行，所以这个要在 postcss-loader 之前
-					{
-						loader: resolve("loaders/transform-matrix-loader.js"),
-						options: {
-							precision: 4, // 数字精度
-							verbose: true, // 显示转换日志
-						},
-					},
+					{ loader: "css-loader", options: { importLoaders: 1 } },
 					"postcss-loader",
 				],
 			},
