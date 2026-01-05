@@ -1,0 +1,90 @@
+/* 
+ * Transform Matrix 示例
+ * 演示如何使用 transform-matrix-loader 转换 matrix3d
+ */
+
+/* 示例 1: 简单的平移 */
+.translate-example {
+	/* 这个 matrix3d 表示 translateX(100px) translateY(50px) translateZ(20px) */
+	transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 100, 50, 20, 1);
+}
+
+/* 示例 2: 缩放 */
+.scale-example {
+	/* 这个 matrix3d 表示 scale3d(2, 1.5, 1) */
+	transform: matrix3d(2, 0, 0, 0, 0, 1.5, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+}
+
+/* 示例 3: 绕 Z 轴旋转 45 度 */
+.rotate-z-example {
+	/* 这个 matrix3d 表示 rotateZ(45deg) */
+	transform: matrix3d(
+		0.7071,
+		0.7071,
+		0,
+		0,
+		-0.7071,
+		0.7071,
+		0,
+		0,
+		0,
+		0,
+		1,
+		0,
+		0,
+		0,
+		0,
+		1
+	);
+}
+
+/* 示例 4: 组合变换 - 平移 + 缩放 */
+.combined-example {
+	/* 这个 matrix3d 表示 translate3d(50px, 30px, 10px) scale3d(1.5, 1.5, 1) */
+	transform: matrix3d(1.5, 0, 0, 0, 0, 1.5, 0, 0, 0, 0, 1, 0, 50, 30, 10, 1);
+}
+
+/* 示例 5: 复杂的 3D 变换 */
+.complex-3d-example {
+	/* 包含平移、旋转和缩放的复杂变换 */
+	transform: matrix3d(
+		1.2,
+		0.3,
+		0,
+		0,
+		-0.3,
+		1.2,
+		0,
+		0,
+		0,
+		0,
+		1.5,
+		0,
+		100,
+		50,
+		25,
+		1
+	);
+}
+
+/* 示例 6: 透视变换 */
+.perspective-example {
+	/* 带有透视效果的变换 */
+	transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, -0.001, 0, 0, 200, 1);
+}
+
+/* 用于演示的容器样式 */
+.demo-container {
+	width: 200px;
+	height: 200px;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	margin: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: white;
+	font-size: 18px;
+	font-weight: bold;
+	border-radius: 10px;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
