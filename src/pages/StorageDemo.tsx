@@ -23,7 +23,7 @@ const StorageDemo = () => {
 	})
 
 	// API 缓存模拟
-	const [cachedData, setCachedData] = useState<any>(null)
+	const [cachedData, setCachedData] = useState<unknown>(null)
 
 	// 获取存储信息
 	useEffect(() => {

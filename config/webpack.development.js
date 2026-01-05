@@ -1,11 +1,11 @@
 const HtmlWebpackPlugin = require("html-webpack-plugin")
-const { resolve, join } = require("path")
+const { resolve, join } = require("node:path")
 const FriendlyErrorsWebpackPlugin = require("@soda/friendly-errors-webpack-plugin")
 const notifier = require("node-notifier")
-const BundleAnalyzerPlugin =
+const _BundleAnalyzerPlugin =
 	require("webpack-bundle-analyzer").BundleAnalyzerPlugin
 
-const port = 3000
+const port = 8080
 module.exports = {
 	stats: "errors-only", // 只显示错误
 	devServer: {
@@ -42,7 +42,7 @@ module.exports = {
 
 		new FriendlyErrorsWebpackPlugin({
 			compilationSuccessInfo: {
-				messages: ["You application is running here http://localhost:" + port],
+				messages: [`You application is running here http://localhost:${port}`],
 				notes: ["💊 构建信息请及时关注窗口右上角"],
 			},
 			// new WebpackBuildNotifierPlugin({
@@ -58,7 +58,7 @@ module.exports = {
 				console.log(error)
 				notifier.notify({
 					title: "👒 Webpack Build Error",
-					message: severity + ": " + error.name,
+					message: `${severity}: ${error.name}`,
 					subtitle: error.file || "",
 					icon: join(__dirname, "icon.png"),
 				})

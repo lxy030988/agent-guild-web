@@ -70,7 +70,7 @@ export function useStorage<T>(
  * 批量存储 Hook
  * 用于一次性管理多个存储项
  */
-export function useBatchStorage<T extends Record<string, any>>(
+export function useBatchStorage<T extends Record<string, unknown>>(
 	keys: string[],
 	storage: typeof localforage = appStorage,
 ): [T | null, (data: Partial<T>) => void, boolean] {
@@ -84,9 +84,9 @@ export function useBatchStorage<T extends Record<string, any>>(
 		Promise.all(keys.map((key) => storage.getItem(key))).then((values) => {
 			if (isMounted) {
 				const result = keys.reduce((acc, key, index) => {
-					acc[key] = values[index]
+					;(acc as Record<string, unknown>)[key] = values[index]
 					return acc
-				}, {} as any)
+				}, {} as T)
 				setData(result)
 				setIsLoading(false)
 			}
@@ -95,17 +95,21 @@ export function useBatchStorage<T extends Record<string, any>>(
 		return () => {
 			isMounted = false
 		}
-	}, [storage, keys.map, keys.reduce])
+	}, [storage, keys])
 
 	// 更新多个值
 	const updateData = useCallback(
 		(updates: Partial<T>) => {
 			const promises = Object.entries(updates).map(([key, value]) =>
-				storage.setItem(key, value),
+				// biome-ignore lint/suspicious/noExplicitAny: localforage expects any for storage items
+				storage.setItem(key, value as any),
 			)
 
 			Promise.all(promises).then(() => {
-				setData((prev) => ({ ...prev, ...updates }) as T)
+				setData((prev: T | null) => {
+					if (!prev) return updates as T
+					return { ...prev, ...updates } as T
+				})
 			})
 		},
 		[storage],

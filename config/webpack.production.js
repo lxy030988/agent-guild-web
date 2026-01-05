@@ -1,6 +1,6 @@
 const TerserPlugin = require("terser-webpack-plugin")
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin")
-const { join, resolve } = require("path")
+const { join, resolve } = require("node:path")
 const HtmlWebpackPlugin = require("html-webpack-plugin")
 const Critters = require("critters-webpack-plugin")
 const CompressionPlugin = require("compression-webpack-plugin")

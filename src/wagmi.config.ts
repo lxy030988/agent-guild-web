@@ -10,6 +10,7 @@ export const hardhat = {
 	rpcUrls: {
 		default: { http: ["http://127.0.0.1:8545"] },
 	},
+	testnet: true,
 }
 
 export const CONTRACT_ADDRESSES: Record<number, Record<string, string>> = {

@@ -1,6 +1,6 @@
+import path from "node:path"
 import { defineConfig, devices } from "@playwright/test"
 import { config as dotenvConfig } from "dotenv"
-import path from "path"
 
 // 加载 .env.test 环境变量
 dotenvConfig({ path: path.resolve(__dirname, ".env.test") })

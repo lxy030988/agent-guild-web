@@ -1,4 +1,4 @@
-const { resolve } = require("path")
+const { resolve } = require("node:path")
 const merge = require("webpack-merge")
 const getArgv = () => {
 	const args = process.argv.slice(2)
@@ -16,7 +16,7 @@ const argv = getArgv()
 const _mode = argv.mode || "development"
 const _mergeConfig = require(`./config/webpack.${_mode}.js`)
 const MiniCssExtractPlugin = require("mini-css-extract-plugin")
-const _modeflag = _mode === "production" ? true : false
+const _modeflag = _mode === "production"
 const { CleanWebpackPlugin } = require("clean-webpack-plugin")
 // const ProgressBarPlugin = require('progress-bar-webpack-plugin');
 // const WebpackBar = require('webpackbar');

@@ -124,12 +124,12 @@ self.addEventListener("message", (event) => {
 })
 
 // Service Worker 激活时清理旧缓存
-self.addEventListener("activate", (event) => {
+self.addEventListener("activate", (_event) => {
 	console.log("[SW] Service Worker 已激活")
 })
 
 // Service Worker 安装时
-self.addEventListener("install", (event) => {
+self.addEventListener("install", (_event) => {
 	console.log("[SW] Service Worker 已安装")
 	// 强制跳过等待，立即激活
 	self.skipWaiting()
