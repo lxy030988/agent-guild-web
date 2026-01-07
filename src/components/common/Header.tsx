@@ -1,3 +1,7 @@
+import { LogOut, Sparkles, User, Wallet } from "lucide-react"
+import { memo, useCallback, useEffect, useRef } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { useAccount, useConnect, useDisconnect, useEnsName } from "wagmi"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -10,10 +14,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/hooks/useAuth"
 import { useWeb3Login } from "@/hooks/useWeb3Login"
-import { LogOut, Sparkles, User, Wallet } from "lucide-react"
-import { memo, useCallback, useEffect, useRef } from "react"
-import { Link, useNavigate } from "react-router-dom"
-import { useAccount, useConnect, useDisconnect, useEnsName } from "wagmi"
 
 const Header = () => {
 	const navigate = useNavigate()
@@ -116,7 +116,7 @@ const Header = () => {
 							Dashboard
 						</Link>
 						<Link
-							to="/demo"
+							to="/agents"
 							className="transition-all hover:text-primary text-foreground/70 hover:scale-105"
 						>
 							Agents

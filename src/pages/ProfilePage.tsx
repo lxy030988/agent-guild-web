@@ -14,25 +14,35 @@ import {
 	User as UserIcon,
 	Wallet,
 } from "lucide-react"
+import { useEffect } from "react"
 import { Link } from "react-router-dom"
 import { useAccount, useDisconnect, useEnsName } from "wagmi"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar"
+import { Button } from "../components/ui/button"
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
+} from "../components/ui/card"
+import { Label } from "../components/ui/label"
+import { Separator } from "../components/ui/separator"
 import { useAuth } from "../hooks/useAuth"
 
 export default function ProfilePage() {
-	const { user, isAuthenticated, logout } = useAuth()
+	const { user, isAuthenticated, logout, fetchProfile } = useAuth()
 	const { disconnect } = useDisconnect()
 	const { address } = useAccount()
+
+	// 挂载时刷新用户信息
+	useEffect(() => {
+		if (isAuthenticated) {
+			fetchProfile().catch((error) => {
+				console.error("Failed to fetch profile in ProfilePage:", error)
+			})
+		}
+	}, [isAuthenticated, fetchProfile])
 	const { data: ensName } = useEnsName({
 		address,
 		chainId: 1,

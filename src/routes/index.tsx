@@ -11,6 +11,11 @@ const ContractDemo = lazy(() => import("@/pages/ContractDemo"))
 // Auth pages
 const ProfilePage = lazy(() => import("@/pages/ProfilePage"))
 
+// Agent pages
+const AgentsPage = lazy(() => import("@/pages/AgentsPage"))
+const AgentDetailPage = lazy(() => import("@/pages/AgentDetailPage"))
+const AgentCreatePage = lazy(() => import("@/pages/AgentCreatePage"))
+
 const routes: RouteObject[] = [
 	{
 		path: "/",
@@ -55,6 +60,30 @@ const routes: RouteObject[] = [
 				element: (
 					<Suspense fallback={<Loading />}>
 						<ProfilePage />
+					</Suspense>
+				),
+			},
+			{
+				path: "agents",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<AgentsPage />
+					</Suspense>
+				),
+			},
+			{
+				path: "agents/create",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<AgentCreatePage />
+					</Suspense>
+				),
+			},
+			{
+				path: "agents/:id",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<AgentDetailPage />
 					</Suspense>
 				),
 			},
