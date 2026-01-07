@@ -39,7 +39,7 @@ export const AgentDetailPage: React.FC = () => {
 
 			setLoading(true)
 			try {
-				const agentData = await agentApi.getAgent(parseInt(id))
+				const agentData = await agentApi.getAgent(parseInt(id, 10))
 				setAgent(agentData)
 			} catch (error) {
 				console.error("Failed to load agent:", error)

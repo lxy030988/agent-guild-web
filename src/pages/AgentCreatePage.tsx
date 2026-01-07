@@ -118,7 +118,7 @@ const AgentCreatePage = () => {
 								onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
 									setFormData({
 										...formData,
-										timeoutMs: parseInt(e.target.value) || 0,
+										timeoutMs: parseInt(e.target.value, 10) || 0,
 									})
 								}
 							/>

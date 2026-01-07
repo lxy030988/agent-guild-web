@@ -5,6 +5,14 @@ import { useNavigate } from "react-router-dom"
 import { AgentCard } from "../components/AgentCard"
 import { Button } from "../components/ui/button"
 import { Card } from "../components/ui/card"
+import { Input } from "../components/ui/input"
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "../components/ui/select"
 import {
 	agentListAtom,
 	agentListLoadingAtom,
@@ -153,12 +161,12 @@ export const AgentsPage: React.FC = () => {
 
 					{/* 搜索框 */}
 					<div className="relative">
-						<input
+						<Input
 							type="text"
 							placeholder="Search agents..."
 							value={searchKeyword}
 							onChange={(e) => handleSearch(e.target.value)}
-							className="w-full px-4 py-3 pl-12 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+							className="w-full pl-12"
 						/>
 						<svg
 							className="absolute left-4 top-3.5 h-5 w-5 text-gray-400"
@@ -259,22 +267,26 @@ export const AgentsPage: React.FC = () => {
 							</p>
 
 							{/* 排序 */}
-							<select
+							<Select
 								value={`${queryParams.sortBy}-${queryParams.order}`}
-								onChange={(e) => {
-									const [sortBy, order] = e.target.value.split("-") as [
+								onValueChange={(value) => {
+									const [sortBy, order] = value.split("-") as [
 										"createdAt" | "viewCount" | "rating" | "jobCount",
 										"asc" | "desc",
 									]
 									handleSort(sortBy, order)
 								}}
-								className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
 							>
-								<option value="createdAt-desc">Latest</option>
-								<option value="viewCount-desc">Most Viewed</option>
-								<option value="rating-desc">Top Rated</option>
-								<option value="jobCount-desc">Most Active</option>
-							</select>
+								<SelectTrigger className="w-48">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="createdAt-desc">Latest</SelectItem>
+									<SelectItem value="viewCount-desc">Most Viewed</SelectItem>
+									<SelectItem value="rating-desc">Top Rated</SelectItem>
+									<SelectItem value="jobCount-desc">Most Active</SelectItem>
+								</SelectContent>
+							</Select>
 						</div>
 
 						{/* Agent 列表 */}

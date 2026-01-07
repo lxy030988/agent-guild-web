@@ -16,6 +16,12 @@ const AgentsPage = lazy(() => import("@/pages/AgentsPage"))
 const AgentDetailPage = lazy(() => import("@/pages/AgentDetailPage"))
 const AgentCreatePage = lazy(() => import("@/pages/AgentCreatePage"))
 
+// Jobs pages
+const JobsPage = lazy(() => import("@/pages/JobsPage"))
+const JobDetailPage = lazy(() => import("@/pages/JobDetailPage"))
+const JobCreatePage = lazy(() => import("@/pages/JobCreatePage"))
+const MyJobsPage = lazy(() => import("@/pages/MyJobsPage"))
+
 const routes: RouteObject[] = [
 	{
 		path: "/",
@@ -84,6 +90,38 @@ const routes: RouteObject[] = [
 				element: (
 					<Suspense fallback={<Loading />}>
 						<AgentDetailPage />
+					</Suspense>
+				),
+			},
+			{
+				path: "jobs",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<JobsPage />
+					</Suspense>
+				),
+			},
+			{
+				path: "jobs/create",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<JobCreatePage />
+					</Suspense>
+				),
+			},
+			{
+				path: "jobs/my",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<MyJobsPage />
+					</Suspense>
+				),
+			},
+			{
+				path: "jobs/:id",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<JobDetailPage />
 					</Suspense>
 				),
 			},
