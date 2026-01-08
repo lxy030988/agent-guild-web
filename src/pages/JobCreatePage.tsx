@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { toast } from "sonner"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
@@ -11,7 +12,14 @@ import {
 	SelectValue,
 } from "../components/ui/select"
 import { Textarea } from "../components/ui/textarea"
-import { type CreateJobDto, JobCategory, jobApi } from "../utils/job-api"
+import {
+	type CreateJobDto,
+	JobCategory,
+	jobApi,
+	MatchingMode,
+	MatchingModeDescriptions,
+	MatchingModeLabels,
+} from "../utils/job-api"
 
 export default function JobCreatePage() {
 	const navigate = useNavigate()
@@ -29,6 +37,7 @@ export default function JobCreatePage() {
 		budget: 0,
 		currency: "USDC",
 		estimatedDuration: undefined,
+		matchingMode: MatchingMode.SMART,
 	})
 
 	// UI state
@@ -108,7 +117,7 @@ export default function JobCreatePage() {
 		e.preventDefault()
 
 		if (!validateForm()) {
-			alert("请检查表单填写")
+			toast.error("请检查表单填写")
 			return
 		}
 
@@ -126,13 +135,14 @@ export default function JobCreatePage() {
 				budget: formData.budget!,
 				currency: formData.currency,
 				estimatedDuration: formData.estimatedDuration || undefined,
+				matchingMode: formData.matchingMode, // 添加匹配模式
 			}
 
 			const job = await jobApi.createJob(jobData)
-			alert("任务创建成功！")
+			toast.success("任务创建成功！")
 			navigate(`/jobs/${job.id}`)
 		} catch (error: any) {
-			alert(error.response?.data?.message || "创建失败")
+			toast.error(error.response?.data?.message || "创建失败")
 		} finally {
 			setLoading(false)
 		}
@@ -209,6 +219,42 @@ export default function JobCreatePage() {
 										<SelectItem value={JobCategory.OTHER}>其他</SelectItem>
 									</SelectContent>
 								</Select>
+							</div>
+
+							{/* Matching Mode */}
+							<div>
+								<Label htmlFor="matchingMode">匹配模式</Label>
+								<Select
+									value={formData.matchingMode}
+									onValueChange={(value) =>
+										setFormData({
+											...formData,
+											matchingMode: value as MatchingMode,
+										})
+									}
+								>
+									<SelectTrigger className="w-full">
+										<SelectValue placeholder="选择匹配模式" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value={MatchingMode.SMART}>
+											🤖 {MatchingModeLabels[MatchingMode.SMART]}
+										</SelectItem>
+										<SelectItem value={MatchingMode.MANUAL}>
+											✋ {MatchingModeLabels[MatchingMode.MANUAL]}
+										</SelectItem>
+										<SelectItem value={MatchingMode.APPLICATION}>
+											📮 {MatchingModeLabels[MatchingMode.APPLICATION]}
+										</SelectItem>
+										<SelectItem value={MatchingMode.OPEN_MARKET}>
+											🔓 {MatchingModeLabels[MatchingMode.OPEN_MARKET]}
+										</SelectItem>
+									</SelectContent>
+								</Select>
+								<p className="mt-1 text-sm text-gray-500">
+									{formData.matchingMode &&
+										MatchingModeDescriptions[formData.matchingMode]}
+								</p>
 							</div>
 
 							{/* Description */}

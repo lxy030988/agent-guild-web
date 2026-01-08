@@ -2,8 +2,8 @@ import { LogOut, Sparkles, User, Wallet } from "lucide-react"
 import { memo, useCallback, useEffect, useRef } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useAccount, useConnect, useDisconnect, useEnsName } from "wagmi"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar"
+import { Button } from "../../components/ui/button"
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -11,9 +11,10 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { useAuth } from "@/hooks/useAuth"
-import { useWeb3Login } from "@/hooks/useWeb3Login"
+} from "../../components/ui/dropdown-menu"
+import { useAuth } from "../../hooks/useAuth"
+import { useConfirm } from "../../hooks/useConfirm"
+import { useWeb3Login } from "../../hooks/useWeb3Login"
 
 const Header = () => {
 	const navigate = useNavigate()
@@ -26,6 +27,7 @@ const Header = () => {
 	const { disconnect } = useDisconnect()
 	const { user, isAuthenticated, logout } = useAuth()
 	const { web3Login, isLoading } = useWeb3Login()
+	const { confirm, ConfirmDialog } = useConfirm()
 	const pendingLogin = useRef(false)
 
 	// 监听钱包连接状态，自动触发登录
@@ -66,10 +68,14 @@ const Header = () => {
 
 	// 监听全局未授权事件，弹出登录提示
 	useEffect(() => {
-		const handleUnauthorized = (event: Event) => {
+		const handleUnauthorized = async (event: Event) => {
 			const customEvent = event as CustomEvent
 			const message = customEvent.detail?.message || "Session expired."
-			if (window.confirm(`${message}\n\nWould you like to sign in again?`)) {
+			const confirmed = await confirm(
+				"Session Expired",
+				`${message}\n\nWould you like to sign in again?`,
+			)
+			if (confirmed) {
 				// 调用登录逻辑
 				handleSignLogin()
 			} else {
@@ -82,7 +88,7 @@ const Header = () => {
 		return () => {
 			window.removeEventListener("app:unauthorized", handleUnauthorized)
 		}
-	}, [handleSignLogin, navigate])
+	}, [handleSignLogin, navigate, confirm])
 
 	// 退出登录
 	const handleLogout = () => {
@@ -259,6 +265,8 @@ const Header = () => {
 					)}
 				</div>
 			</div>
+
+			<ConfirmDialog />
 		</header>
 	)
 }

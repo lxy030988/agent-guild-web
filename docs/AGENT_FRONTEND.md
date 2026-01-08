@@ -475,6 +475,164 @@ import { Card } from "@/components/ui/card"
 
 ---
 
+## 🎨 Toast 通知与确认对话框
+
+### 12. Sonner Toast 使用
+
+**安装**: 已通过 shadcn CLI 安装 `sonner` 组件
+
+**全局配置** (`src/pages/App.tsx`):
+```typescript
+import { Toaster } from "../components/ui/sonner"
+
+function App() {
+  return (
+    <>
+      <Routes>{/* ... */}</Routes>
+      <Toaster />
+    </>
+  )
+}
+```
+
+**使用示例**:
+```typescript
+import { toast } from "sonner"
+
+// 成功提示
+toast.success("Agent 已成功创建")
+toast.success("操作完成")
+
+// 错误提示
+toast.error("创建失败")
+toast.error(error.response?.data?.message || "操作失败")
+
+// 信息提示
+toast.info("正在加载...")
+
+// 警告提示
+toast.warning("请先登录")
+```
+
+**特性**:
+- 自动消失（3秒）
+- 点击可手动关闭
+- 美观的 UI，支持深色模式
+- 支持多个 toast 堆叠显示
+
+---
+
+### 13. useConfirm Hook - 确认对话框
+
+**文件位置**: `src/hooks/useConfirm.tsx`
+
+**实现原理**: 通过 Promise 实现异步确认，返回 boolean 结果
+
+**核心代码**:
+```typescript
+export function useConfirm() {
+  const [state, setState] = useState({
+    open: false,
+    title: "",
+    message: "",
+    resolve: null as ((value: boolean) => void) | null
+  })
+
+  const confirm = (title: string, message: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      setState({ open: true, title, message, resolve })
+    })
+  }
+
+  const handleConfirm = () => {
+    state.resolve?.(true)
+    setState({ open: false, title: "", message: "", resolve: null })
+  }
+
+  const handleCancel = () => {
+    state.resolve?.(false)
+    setState({ open: false, title: "", message: "", resolve: null })
+  }
+
+  const ConfirmDialogComponent = () => (
+    <ConfirmDialog
+      open={state.open}
+      title={state.title}
+      message={state.message}
+      onConfirm={handleConfirm}
+      onCancel={handleCancel}
+    />
+  )
+
+  return { confirm, ConfirmDialog: ConfirmDialogComponent }
+}
+```
+
+**使用示例**:
+```typescript
+import { useConfirm } from "../hooks/useConfirm"
+
+function AgentDetailPage() {
+  const { confirm, ConfirmDialog } = useConfirm()
+  
+  const handleDelete = async () => {
+    // 弹出确认对话框
+    const confirmed = await confirm(
+      "删除 Agent",
+      `确定要删除 "${agent.name}" 吗？此操作不可撤销。`
+    )
+    
+    if (confirmed) {
+      // 用户点击了"确定"
+      await agentApi.deleteAgent(agent.id)
+      toast.success("删除成功")
+      navigate("/agents")
+    }
+    // 用户点击了"取消"或关闭对话框，什么都不做
+  }
+  
+  return (
+    <>
+      <Button onClick={handleDelete}>删除</Button>
+      <ConfirmDialog />
+    </>
+  )
+}
+```
+
+**特性**:
+- ✅ 支持 async/await，代码更清晰
+- ✅ 替代原生 `window.confirm()`
+- ✅ 美观的 UI，符合设计系统
+- ✅ 自定义标题和消息
+- ✅ 可点击遮罩层关闭
+
+**何时使用**:
+- ❗ 删除操作
+- ❗ 取消任务
+- ❗ 拒绝申请
+- ❗ 其他不可撤销的操作
+
+---
+
+### 14. 替换原生弹窗的原因
+
+**原生弹框的问题**:
+- ❌ UI 丑陋，无法自定义样式
+- ❌ 阻塞浏览器，用户体验差
+- ❌ 移动端兼容性差
+- ❌ 无法控制位置和动画
+- ❌ 不符合现代 Web 设计规范
+
+**现代方案的优势**:
+- ✅ 美观，符合设计系统
+- ✅ 非阻塞，用户体验好
+- ✅ 支持动画和过渡效果
+- ✅ 完全可定制
+- ✅ 更好的可访问性（a11y）
+
+---
+
 ## 📚 相关文档
 
 - [后端 API 文档](file:///Users/lxy/Desktop/lxy030988/agent-guild-nest/docs/AGENT_API.md)

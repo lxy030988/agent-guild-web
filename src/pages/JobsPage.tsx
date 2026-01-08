@@ -134,7 +134,7 @@ export default function JobsPage() {
 
 				{/* Statistics Dashboard */}
 				{stats && (
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+					<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4 mb-6">
 						<StatCard
 							title="总任务数"
 							value={stats.total}
@@ -148,10 +148,22 @@ export default function JobsPage() {
 							icon={<span>🔵</span>}
 						/>
 						<StatCard
+							title="已匹配"
+							value={stats.matched}
+							color="purple"
+							icon={<span>🤝</span>}
+						/>
+						<StatCard
 							title="进行中"
 							value={stats.inProgress}
 							color="yellow"
 							icon={<span>⚡</span>}
+						/>
+						<StatCard
+							title="已提交"
+							value={stats.submitted}
+							color="yellow"
+							icon={<span>📤</span>}
 						/>
 						<StatCard
 							title="已完成"
@@ -159,6 +171,13 @@ export default function JobsPage() {
 							color="green"
 							icon={<span>✅</span>}
 						/>
+						<StatCard
+							title="已取消"
+							value={stats.cancelled}
+							color="gray"
+							icon={<span>❌</span>}
+						/>
+						{/* Note: backend stats doesn't include disputed, would need to add it */}
 					</div>
 				)}
 

@@ -3,17 +3,34 @@ import { useCallback, useEffect, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import remarkGfm from "remark-gfm"
+import { toast } from "sonner"
 import JobStatusBadge from "../components/JobStatusBadge"
 import { Button } from "../components/ui/button"
 import { Label } from "../components/ui/label"
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "../components/ui/select"
 import { Textarea } from "../components/ui/textarea"
 import { useAuth } from "../hooks/useAuth"
+import { useConfirm } from "../hooks/useConfirm"
 import {
 	jobLoadingAtom,
 	jobRecommendationsAtom,
 	selectedJobAtom,
 } from "../store/jobAtoms"
-import { JobCategoryLabels, JobStatus, jobApi } from "../utils/job-api"
+import { type Agent, agentApi } from "../utils/agent-api"
+import {
+	JobCategoryLabels,
+	JobStatus,
+	jobApi,
+	MatchingMode,
+	MatchingModeDescriptions,
+	MatchingModeLabels,
+} from "../utils/job-api"
 import {
 	type JobApplication,
 	jobApplicationApi,
@@ -23,6 +40,7 @@ export default function JobDetailPage() {
 	const { id } = useParams<{ id: string }>()
 	const _navigate = useNavigate()
 	const { user } = useAuth()
+	const { confirm, ConfirmDialog } = useConfirm()
 
 	const [job, setJob] = useAtom(selectedJobAtom)
 	const [recommendations, setRecommendations] = useAtom(jobRecommendationsAtom)
@@ -36,16 +54,18 @@ export default function JobDetailPage() {
 	const [feedback, setFeedback] = useState("")
 	const [rejectReason, setRejectReason] = useState("")
 
-	// Apply modal state - These are defined for future use
-	const [_showApplyModal, _setShowApplyModal] = useState(false)
-	const [_applyMessage, _setApplyMessage] = useState("")
-	const [_proposedPrice, _setProposedPrice] = useState(
-		job?.budget.toString() || "",
-	)
-	const [_estimatedTime, _setEstimatedTime] = useState("60")
+	// Apply modal state
+	const [showApplyModal, setShowApplyModal] = useState(false)
+	const [applyMessage, setApplyMessage] = useState("")
+	const [selectedAgentForApply, setSelectedAgentForApply] = useState<
+		number | null
+	>(null)
 
 	// Applications state
-	const [_applications, setApplications] = useState<JobApplication[]>([])
+	const [applications, setApplications] = useState<JobApplication[]>([])
+
+	// User's agents for applying
+	const [myAgents, setMyAgents] = useState<Agent[]>([])
 
 	// Load job details
 	const loadJob = useCallback(async () => {
@@ -94,17 +114,38 @@ export default function JobDetailPage() {
 		}
 	}, [job, isOwner, loadApplications])
 
+	// Load user's agents for apply functionality
+	useEffect(() => {
+		if (!user) return
+		const loadMyAgents = async () => {
+			try {
+				const result = await agentApi.getAgents({})
+				// Filter to only user's agents - check owner.id instead of ownerId
+				const userAgents = result.data.filter(
+					(agent: Agent) => agent.owner?.id === user.id,
+				)
+				console.log("My agents:", userAgents) // Debug log
+				setMyAgents(userAgents)
+			} catch (error) {
+				console.error("Failed to load my agents:", error)
+			}
+		}
+		loadMyAgents()
+	}, [user])
+
 	// Actions
-	const handleCancel = async () => {
-		if (!job || !window.confirm("确定要取消这个任务吗？")) return
+	const handleCancelJob = async () => {
+		if (!job) return
+		const confirmed = await confirm("确认取消", "确定要取消这个任务吗？")
+		if (!confirmed) return
 
 		try {
 			setActionLoading(true)
 			await jobApi.cancelJob(job.id)
 			await loadJob()
-			alert("任务已取消")
+			toast.success("任务已取消")
 		} catch (error: any) {
-			alert(error.response?.data?.message || "取消失败")
+			toast.error(error.response?.data?.message || "取消失败")
 		} finally {
 			setActionLoading(false)
 		}
@@ -117,9 +158,9 @@ export default function JobDetailPage() {
 			setActionLoading(true)
 			await jobApi.acceptJob(job.id)
 			await loadJob()
-			alert("任务已接受")
+			toast.success("任务已接受")
 		} catch (error: any) {
-			alert(error.response?.data?.message || "接受失败")
+			toast.error(error.response?.data?.message || "接受失败")
 		} finally {
 			setActionLoading(false)
 		}
@@ -132,9 +173,9 @@ export default function JobDetailPage() {
 			setActionLoading(true)
 			await jobApi.startJob(job.id)
 			await loadJob()
-			alert("任务已开始执行")
+			toast.success("任务已开始执行")
 		} catch (error: any) {
-			alert(error.response?.data?.message || "开始失败")
+			toast.error(error.response?.data?.message || "开始失败")
 		} finally {
 			setActionLoading(false)
 		}
@@ -148,16 +189,18 @@ export default function JobDetailPage() {
 			await jobApi.approveJob(job.id, rating, feedback)
 			await loadJob()
 			setShowApproveModal(false)
-			alert("验收通过")
+			toast.success("验收通过")
 		} catch (error: any) {
-			alert(error.response?.data?.message || "验收失败")
+			toast.error(error.response?.data?.message || "验收失败")
 		} finally {
 			setActionLoading(false)
 		}
 	}
 
 	const handleAssignAgent = async (agentId: number) => {
-		if (!job || !window.confirm("确定要分配这个 Agent 吗？")) return
+		if (!job) return
+		const confirmed = await confirm("确认分配", "确定要分配这个 Agent 吗？")
+		if (!confirmed) return
 
 		try {
 			setActionLoading(true)
@@ -166,9 +209,9 @@ export default function JobDetailPage() {
 				status: JobStatus.MATCHED,
 			})
 			await loadJob()
-			alert("Agent 已成功分配")
+			toast.success("Agent 已成功分配")
 		} catch (error: any) {
-			alert(error.response?.data?.message || "分配失败")
+			toast.error(error.response?.data?.message || "分配失败")
 		} finally {
 			setActionLoading(false)
 		}
@@ -176,7 +219,7 @@ export default function JobDetailPage() {
 
 	const handleReject = async () => {
 		if (!job || !rejectReason.trim()) {
-			alert("请填写拒绝原因")
+			toast.error("请填写拒绝原因")
 			return
 		}
 
@@ -185,9 +228,66 @@ export default function JobDetailPage() {
 			await jobApi.rejectJob(job.id, rejectReason)
 			await loadJob()
 			setShowRejectModal(false)
-			alert("已拒绝验收")
-		} catch (error: any) {
-			alert(error.response?.data?.message || "拒绝失败")
+			toast.success("已拒绝验收")
+		} catch (error: unknown) {
+			const err = error as { response?: { data?: { message?: string } } }
+			toast.error(err.response?.data?.message || "拒绝失败")
+		} finally {
+			setActionLoading(false)
+		}
+	}
+
+	const handleApplyToJob = async () => {
+		if (!selectedAgentForApply || !job) return
+
+		try {
+			setActionLoading(true)
+			await jobApplicationApi.applyToJob(job.id, {
+				agentId: selectedAgentForApply,
+				message: applyMessage,
+			})
+			toast.success("申请已提交")
+			setShowApplyModal(false)
+			setApplyMessage("")
+			setSelectedAgentForApply(null)
+		} catch (error: unknown) {
+			const err = error as { response?: { data?: { message?: string } } }
+			toast.error(err.response?.data?.message || "申请失败")
+		} finally {
+			setActionLoading(false)
+		}
+	}
+
+	const handleAcceptApplication = async (applicationId: number) => {
+		const confirmed = await confirm("确认接受", "确定接受此申请吗？")
+		if (!confirmed) return
+
+		try {
+			setActionLoading(true)
+			await jobApplicationApi.updateApplicationStatus(applicationId, "ACCEPTED")
+			await loadJob()
+			await loadApplications()
+			toast.success("已接受申请")
+		} catch (error: unknown) {
+			const err = error as { response?: { data?: { message?: string } } }
+			toast.error(err.response?.data?.message || "操作失败")
+		} finally {
+			setActionLoading(false)
+		}
+	}
+
+	const handleRejectApplication = async (applicationId: number) => {
+		const confirmed = await confirm("确认拒绝", "确定拒绝此申请吗？")
+		if (!confirmed) return
+
+		try {
+			setActionLoading(true)
+			await jobApplicationApi.updateApplicationStatus(applicationId, "REJECTED")
+			await loadApplications()
+			toast.success("已拒绝申请")
+		} catch (error: unknown) {
+			const err = error as { response?: { data?: { message?: string } } }
+			toast.error(err.response?.data?.message || "操作失败")
 		} finally {
 			setActionLoading(false)
 		}
@@ -265,7 +365,7 @@ export default function JobDetailPage() {
 									</Link>
 									<Button
 										variant="outline"
-										onClick={handleCancel}
+										onClick={handleCancelJob}
 										disabled={actionLoading}
 										className="border-red-300 text-red-600 hover:bg-red-50"
 									>
@@ -351,6 +451,16 @@ export default function JobDetailPage() {
 								</div>
 
 								<div>
+									<Label>匹配模式</Label>
+									<p className="text-gray-900 mt-1 font-medium">
+										{MatchingModeLabels[job.matchingMode]}
+									</p>
+									<p className="text-sm text-gray-500 mt-1">
+										{MatchingModeDescriptions[job.matchingMode]}
+									</p>
+								</div>
+
+								<div>
 									<Label className="mb-2">所需能力</Label>
 									<div className="flex flex-wrap gap-2">
 										{job.requiredCapabilities.map((cap) => (
@@ -395,13 +505,42 @@ export default function JobDetailPage() {
 
 								{job.inputData && (
 									<div>
-										<Label className="mb-2">输入数据 (Input Data)</Label>
-										<div className="bg-gray-50 p-4 rounded border border-gray-200 overflow-auto text-sm mt-1">
-											{typeof job.inputData === "string" ? (
-												<p className="whitespace-pre-wrap">{job.inputData}</p>
-											) : (
-												<pre>{JSON.stringify(job.inputData, null, 2)}</pre>
-											)}
+										<h3 className="text-lg font-semibold text-gray-900 mb-2">
+											输入数据
+										</h3>
+										<div className="bg-gray-50 p-4 rounded-lg">
+											{(() => {
+												// 如果是字符串，直接显示
+												if (typeof job.inputData === "string") {
+													return (
+														<p className="whitespace-pre-wrap text-gray-700">
+															{job.inputData}
+														</p>
+													)
+												}
+												// 如果是对象且有 content 字段（JobCreatePage 默认格式）
+												if (job.inputData.content) {
+													return (
+														<p className="whitespace-pre-wrap text-gray-700">
+															{job.inputData.content}
+														</p>
+													)
+												}
+												// 如果是对象且有 code 字段
+												if (job.inputData.code) {
+													return (
+														<pre className="text-sm text-gray-700 overflow-x-auto">
+															<code>{job.inputData.code}</code>
+														</pre>
+													)
+												}
+												// 否则显示 JSON
+												return (
+													<pre className="text-sm text-gray-700 overflow-x-auto">
+														{JSON.stringify(job.inputData, null, 2)}
+													</pre>
+												)
+											})()}
 										</div>
 									</div>
 								)}
@@ -462,82 +601,203 @@ export default function JobDetailPage() {
 						)}
 					</div>
 
-					{/* Right Column - Recommendations */}
+					{/* Right Column - Conditional based on matchingMode */}
 					<div className="space-y-6">
-						{recommendations.length > 0 && (
-							<div className="bg-white rounded-lg border border-gray-200 p-6">
-								<h2 className="text-xl font-semibold mb-4">推荐 Agents</h2>
-								<div className="space-y-4">
-									{recommendations.map((rec) => (
-										<div
-											key={rec.id}
-											className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors"
-										>
-											<div className="flex items-start justify-between mb-3">
-												<div className="flex-1">
-													<h3 className="font-semibold text-gray-900 mb-1">
-														{rec.agent.name}
-													</h3>
-													<p className="text-xs text-gray-600 line-clamp-2">
-														{rec.agent.description}
-													</p>
-												</div>
-												<div className="ml-3 text-center">
-													<div className="text-2xl font-bold text-blue-600">
-														{rec.matchScore}
+						{/* For MANUAL/SMART/OPEN_MARKET: Show recommendations with assign button */}
+						{(job.matchingMode === MatchingMode.MANUAL ||
+							job.matchingMode === MatchingMode.SMART ||
+							job.matchingMode === MatchingMode.OPEN_MARKET) &&
+							job.status === JobStatus.OPEN &&
+							recommendations.length > 0 && (
+								<div className="bg-white rounded-lg border border-gray-200 p-6">
+									<h2 className="text-xl font-semibold mb-4">推荐 Agents</h2>
+									<div className="space-y-4">
+										{recommendations.map((rec) => (
+											<div
+												key={rec.id}
+												className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors"
+											>
+												<div className="flex items-start justify-between mb-3">
+													<div className="flex-1">
+														<h3 className="font-semibold text-gray-900 mb-1">
+															{rec.agent.name}
+														</h3>
+														<p className="text-xs text-gray-600 line-clamp-2">
+															{rec.agent.description}
+														</p>
 													</div>
-													<div className="text-xs text-gray-500">匹配度</div>
+													<div className="ml-3 text-center">
+														<div className="text-2xl font-bold text-blue-600">
+															{rec.matchScore}
+														</div>
+														<div className="text-xs text-gray-500">匹配度</div>
+													</div>
+												</div>
+
+												<p className="text-sm text-gray-700 mb-3">
+													{rec.reason}
+												</p>
+
+												<div className="flex items-center justify-between text-sm">
+													<div className="flex items-center gap-3">
+														<span className="text-gray-600">
+															⭐ {rec.agent.rating?.toFixed(1) || "N/A"}
+														</span>
+														<span className="text-gray-600">
+															{rec.agent.jobCount} 任务
+														</span>
+													</div>
+													<div className="flex items-center gap-2">
+														<Link
+															to={`/agents/${rec.agent.id}`}
+															className="text-blue-600 hover:text-blue-700 text-sm"
+														>
+															查看详情
+														</Link>
+														{isOwner &&
+															job.matchingMode !== MatchingMode.APPLICATION &&
+															[JobStatus.OPEN, JobStatus.MATCHED].includes(
+																job.status,
+															) && (
+																<Button
+																	size="sm"
+																	variant="outline"
+																	onClick={() =>
+																		handleAssignAgent(rec.agent.id)
+																	}
+																	disabled={
+																		actionLoading ||
+																		job.assignedAgentId === rec.agent.id
+																	}
+																	className="h-7 px-2 text-xs border-blue-200 text-blue-600 hover:bg-blue-50"
+																>
+																	{job.assignedAgentId === rec.agent.id
+																		? "已选择"
+																		: "选择并分配"}
+																</Button>
+															)}
+													</div>
 												</div>
 											</div>
-
-											<p className="text-sm text-gray-700 mb-3">{rec.reason}</p>
-
-											<div className="flex items-center justify-between text-sm">
-												<div className="flex items-center gap-3">
-													<span className="text-gray-600">
-														⭐ {rec.agent.rating?.toFixed(1) || "N/A"}
-													</span>
-													<span className="text-gray-600">
-														{rec.agent.jobCount} 任务
-													</span>
-												</div>
-												<div className="flex items-center gap-2">
-													<Link
-														to={`/agents/${rec.agent.id}`}
-														className="text-blue-600 hover:text-blue-700 text-sm"
-													>
-														查看详情
-													</Link>
-													{isOwner &&
-														[JobStatus.OPEN, JobStatus.MATCHED].includes(
-															job.status,
-														) && (
-															<Button
-																size="sm"
-																variant="outline"
-																onClick={() => handleAssignAgent(rec.agent.id)}
-																disabled={
-																	actionLoading ||
-																	job.assignedAgentId === rec.agent.id
-																}
-																className="h-7 px-2 text-xs border-blue-200 text-blue-600 hover:bg-blue-50"
-															>
-																{job.assignedAgentId === rec.agent.id
-																	? "已选择"
-																	: "选择并分配"}
-															</Button>
-														)}
-												</div>
-											</div>
-										</div>
-									))}
+										))}
+									</div>
 								</div>
+							)}
+						{/* For APPLICATION/OPEN_MARKET: Show apply button for non-owners */}
+						{(() => {
+							const shouldShowApply =
+								(job.matchingMode === MatchingMode.APPLICATION ||
+									job.matchingMode === MatchingMode.OPEN_MARKET) &&
+								job.status === JobStatus.OPEN &&
+								myAgents.length > 0
+
+							console.log("Apply button debug:", {
+								matchingMode: job.matchingMode,
+								isAPPLICATION: job.matchingMode === MatchingMode.APPLICATION,
+								isOPEN_MARKET: job.matchingMode === MatchingMode.OPEN_MARKET,
+								isOwner,
+								myAgentsLength: myAgents.length,
+								shouldShowApply,
+							})
+
+							return shouldShowApply
+						})() && (
+							<div className="bg-white rounded-lg border border-gray-200 p-6">
+								<h2 className="text-xl font-semibold mb-4">申请此任务</h2>
+								<p className="text-gray-600 mb-4 text-sm">
+									您可以使用您的 Agent 申请此任务
+								</p>
+								<Button
+									onClick={() => setShowApplyModal(true)}
+									className="w-full"
+								>
+									提交申请
+								</Button>
 							</div>
 						)}
+
+						{/* For APPLICATION/OPEN_MARKET: Show applications list for owners */}
+						{(() => {
+							const shouldShowApplications =
+								(job.matchingMode === MatchingMode.APPLICATION ||
+									job.matchingMode === MatchingMode.OPEN_MARKET) &&
+								isOwner
+
+							console.log("Applications list debug:", {
+								matchingMode: job.matchingMode,
+								isAPPLICATION: job.matchingMode === MatchingMode.APPLICATION,
+								isOPEN_MARKET: job.matchingMode === MatchingMode.OPEN_MARKET,
+								isOwner,
+								applicationsLength: applications.length,
+								shouldShowApplications,
+							})
+
+							return shouldShowApplications
+						})() &&
+							job.status === JobStatus.OPEN && (
+								<div className="bg-white rounded-lg border border-gray-200 p-6">
+									<h2 className="text-xl font-semibold mb-4">申请列表</h2>
+									{applications.length === 0 ? (
+										<p className="text-gray-500 text-sm text-center py-8">
+											暂无申请
+										</p>
+									) : (
+										<div className="space-y-3">
+											{applications.map((app) => (
+												<div
+													key={app.id}
+													className="border border-gray-200 rounded-lg p-4"
+												>
+													<div className="flex items-start justify-between mb-2">
+														<div>
+															<h3 className="font-semibold text-gray-900">
+																{app.agent?.name}
+															</h3>
+															<p className="text-xs text-gray-500">
+																来自{" "}
+																{app.agent?.owner?.name ||
+																	app.agent?.owner?.walletAddress.slice(0, 8)}
+															</p>
+														</div>
+														<div className="flex items-center gap-1 text-xs text-gray-600">
+															⭐ {app.agent?.rating?.toFixed(1) || "N/A"}
+														</div>
+													</div>
+													{app.message && (
+														<p className="text-sm text-gray-700 mb-3 bg-gray-50 p-2 rounded">
+															{app.message}
+														</p>
+													)}
+													<div className="flex items-center gap-2">
+														<Button
+															size="sm"
+															onClick={() => handleAcceptApplication(app.id)}
+															disabled={actionLoading}
+															className="flex-1 bg-green-600 hover:bg-green-700"
+														>
+															接受
+														</Button>
+														<Button
+															size="sm"
+															variant="outline"
+															onClick={() => handleRejectApplication(app.id)}
+															disabled={actionLoading}
+															className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+														>
+															拒绝
+														</Button>
+													</div>
+												</div>
+											))}
+										</div>
+									)}
+								</div>
+							)}
 					</div>
 				</div>
 			</div>
 
+			<ConfirmDialog />
 			{/* Approve Modal */}
 			{showApproveModal && (
 				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -628,6 +888,63 @@ export default function JobDetailPage() {
 							<Button
 								variant="outline"
 								onClick={() => setShowRejectModal(false)}
+							>
+								取消
+							</Button>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Apply Modal */}
+			{showApplyModal && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white rounded-lg max-w-md w-full p-6">
+						<h3 className="text-xl font-semibold mb-4">申请任务</h3>
+						<div className="space-y-4">
+							<div>
+								<Label htmlFor="apply-agent">选择 Agent *</Label>
+								<Select
+									value={selectedAgentForApply?.toString() || ""}
+									onValueChange={(value) =>
+										setSelectedAgentForApply(Number(value))
+									}
+								>
+									<SelectTrigger className="mt-2">
+										<SelectValue placeholder="请选择一个 Agent" />
+									</SelectTrigger>
+									<SelectContent>
+										{myAgents.map((agent) => (
+											<SelectItem key={agent.id} value={agent.id.toString()}>
+												{agent.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+							<div>
+								<Label htmlFor="apply-message">申请说明（可选）</Label>
+								<Textarea
+									id="apply-message"
+									value={applyMessage}
+									onChange={(e) => setApplyMessage(e.target.value)}
+									rows={4}
+									placeholder="说明您的优势和为什么适合这个任务..."
+									className="mt-2"
+								/>
+							</div>
+						</div>
+						<div className="flex items-center gap-3 mt-6">
+							<Button
+								onClick={handleApplyToJob}
+								disabled={actionLoading || !selectedAgentForApply}
+								className="flex-1 bg-blue-600 hover:bg-blue-700"
+							>
+								{actionLoading ? "提交中..." : "提交申请"}
+							</Button>
+							<Button
+								variant="outline"
+								onClick={() => setShowApplyModal(false)}
 							>
 								取消
 							</Button>

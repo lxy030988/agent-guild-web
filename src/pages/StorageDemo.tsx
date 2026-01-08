@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { toast } from "sonner"
 import { useStorage } from "@/hooks/useStorage"
 import { appStorage, cacheStorage, StorageManager } from "@/utils/storage"
 
@@ -255,7 +256,7 @@ const StorageDemo = () => {
 							onClick={async () => {
 								const keys = await appStorage.keys()
 								console.log("所有键:", keys)
-								alert(`共有 ${keys.length} 个键:\n${keys.join(", ")}`)
+								toast.info(`共有 ${keys.length} 个键:\n${keys.join(", ")}`)
 							}}
 							className="rounded bg-purple-500 px-4 py-2 text-white hover:bg-purple-600"
 						>

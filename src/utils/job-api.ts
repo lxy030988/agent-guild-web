@@ -36,6 +36,16 @@ export enum JobStatus {
 }
 
 /**
+ * Job 匹配模式枚举
+ */
+export enum MatchingMode {
+	SMART = "SMART",
+	MANUAL = "MANUAL",
+	APPLICATION = "APPLICATION",
+	OPEN_MARKET = "OPEN_MARKET",
+}
+
+/**
  * Job 类型定义
  */
 export interface Job {
@@ -53,6 +63,7 @@ export interface Job {
 	deadline: string | null
 	estimatedDuration: number | null
 	status: JobStatus
+	matchingMode: MatchingMode
 	ownerId: number
 	assignedAgentId: number | null
 	startedAt: string | null
@@ -127,6 +138,7 @@ export interface CreateJobDto {
 	currency?: string
 	estimatedDuration?: number
 	deadline?: string
+	matchingMode?: MatchingMode
 }
 
 /**
@@ -308,6 +320,58 @@ export const jobApi = {
 		)
 		return response.data.data
 	},
+
+	/**
+	 * 手动分配 Agent
+	 */
+	async assignAgent(jobId: number, agentId: number): Promise<Job> {
+		const response = await apiClient.post<BaseResponse<Job>>(
+			`/jobs/${jobId}/assign`,
+			{ agentId },
+		)
+		return response.data.data
+	},
+
+	/**
+	 * 申请 Job (Agent owner)
+	 */
+	async applyToJob(
+		jobId: number,
+		agentId: number,
+		data: {
+			message?: string
+			proposedPrice?: number
+			estimatedTime?: number
+		},
+	): Promise<any> {
+		const response = await apiClient.post(`/jobs/${jobId}/apply`, {
+			agentId,
+			...data,
+		})
+		return response.data.data
+	},
+
+	/**
+	 * 获取 Job 的申请列表
+	 */
+	async getJobApplications(jobId: number): Promise<any> {
+		const response = await apiClient.get(`/jobs/${jobId}/applications`)
+		return response.data.data
+	},
+
+	/**
+	 * 接受/拒绝申请
+	 */
+	async updateApplicationStatus(
+		applicationId: number,
+		status: "ACCEPTED" | "REJECTED",
+	): Promise<any> {
+		const response = await apiClient.put(
+			`/jobs/applications/${applicationId}`,
+			{ status },
+		)
+		return response.data.data
+	},
 }
 
 /**
@@ -350,4 +414,24 @@ export const JobStatusColors: Record<
 	[JobStatus.COMPLETED]: "green",
 	[JobStatus.CANCELLED]: "gray",
 	[JobStatus.DISPUTED]: "red",
+}
+
+/**
+ * 匹配模式显示名称映射
+ */
+export const MatchingModeLabels: Record<MatchingMode, string> = {
+	[MatchingMode.SMART]: "智能匹配",
+	[MatchingMode.MANUAL]: "手动选择",
+	[MatchingMode.APPLICATION]: "申请制",
+	[MatchingMode.OPEN_MARKET]: "开放市场",
+}
+
+/**
+ * 匹配模式描述映射
+ */
+export const MatchingModeDescriptions: Record<MatchingMode, string> = {
+	[MatchingMode.SMART]: "系统自动匹配并分配最佳 Agent",
+	[MatchingMode.MANUAL]: "从系统推荐列表中手动选择 Agent",
+	[MatchingMode.APPLICATION]: "Agent owners 主动申请，您审核后选择",
+	[MatchingMode.OPEN_MARKET]: "同时支持推荐和申请两种方式",
 }

@@ -190,6 +190,9 @@ export const agentApi = {
 		return response.data.data
 	},
 
+	/**
+	 * 更新 Agent
+	 */
 	async updateAgent(id: number, data: UpdateAgentDto): Promise<Agent> {
 		const response = await apiClient.put<BaseResponse<Agent>>(
 			`/agents/${id}`,
@@ -198,10 +201,10 @@ export const agentApi = {
 		return response.data.data
 	},
 
-	async deleteAgent(id: number): Promise<{ message: string }> {
-		const response = await apiClient.delete<BaseResponse<{ message: string }>>(
-			`/agents/${id}`,
-		)
-		return response.data.data
+	/**
+	 * 删除 Agent
+	 */
+	async deleteAgent(id: number): Promise<void> {
+		await apiClient.delete(`/agents/${id}`)
 	},
 }

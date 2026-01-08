@@ -1,11 +1,13 @@
 import { useAtom, useAtomValue } from "jotai"
 import type React from "react"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
+import { toast } from "sonner"
 import { Button } from "../components/ui/button"
 import { Card } from "../components/ui/card"
+import { useConfirm } from "../hooks/useConfirm"
 import { agentDetailLoadingAtom, selectedAgentAtom } from "../store/agentAtoms"
-import { userAtom } from "../store/userAtoms"
+import { userAtom } from "../stores/authStore"
 import { AgentCategory, agentApi } from "../utils/agent-api"
 
 /**
@@ -27,8 +29,45 @@ export const AgentDetailPage: React.FC = () => {
 	const [agent, setAgent] = useAtom(selectedAgentAtom)
 	const [loading, setLoading] = useAtom(agentDetailLoadingAtom)
 	const user = useAtomValue(userAtom)
+	const [deleting, setDeleting] = useState(false)
+	const { confirm, ConfirmDialog } = useConfirm()
 
 	const isOwner = user && agent && user.id === agent.ownerId
+
+	// 调试日志
+	console.log("🔍 Agent Owner Check:", {
+		user,
+		userId: user?.id,
+		agent: agent
+			? { id: agent.id, name: agent.name, ownerId: agent.ownerId }
+			: null,
+		isOwner,
+	})
+
+	/**
+	 * 删除 Agent
+	 */
+	const handleDelete = async () => {
+		if (!agent) return
+
+		const confirmed = await confirm(
+			"Delete Agent",
+			`Are you sure you want to delete "${agent.name}"? This action cannot be undone.`,
+		)
+		if (!confirmed) return
+
+		setDeleting(true)
+		try {
+			await agentApi.deleteAgent(agent.id)
+			// TODO: Show success toast
+			navigate("/agents")
+		} catch (error) {
+			console.error("Failed to delete agent:", error)
+			toast.error("Failed to delete agent. Please try again.")
+		} finally {
+			setDeleting(false)
+		}
+	}
 
 	/**
 	 * 加载 Agent 详情
@@ -171,12 +210,22 @@ export const AgentDetailPage: React.FC = () => {
 
 								{/* 操作按钮 */}
 								{isOwner && (
-									<Link
-										to={`/agents/${agent.id}/edit`}
-										className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium"
-									>
-										Edit
-									</Link>
+									<div className="flex gap-2">
+										<Link
+											to={`/agents/${agent.id}/edit`}
+											className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium"
+										>
+											Edit
+										</Link>
+										<Button
+											variant="outline"
+											onClick={handleDelete}
+											disabled={deleting}
+											className="border-red-300 text-red-600 hover:bg-red-50"
+										>
+											{deleting ? "Deleting..." : "Delete"}
+										</Button>
+									</div>
 								)}
 							</div>
 
@@ -347,6 +396,8 @@ export const AgentDetailPage: React.FC = () => {
 					</div>
 				</div>
 			</div>
+
+			<ConfirmDialog />
 		</div>
 	)
 }
