@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
+import { useAccount } from "wagmi"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
@@ -12,10 +13,11 @@ import {
 	SelectValue,
 } from "../components/ui/select"
 import { Textarea } from "../components/ui/textarea"
+import { parseJobCreatedEvent, useJobContract } from "../hooks/useJobContract"
 import {
 	type CreateJobDto,
-	JobCategory,
 	jobApi,
+	JobCategory,
 	MatchingMode,
 	MatchingModeDescriptions,
 	MatchingModeLabels,
@@ -23,6 +25,9 @@ import {
 
 export default function JobCreatePage() {
 	const navigate = useNavigate()
+	const { address, isConnected } = useAccount()
+	const { createJobOnChain } = useJobContract()
+
 	const [loading, setLoading] = useState(false)
 
 	// Form state
@@ -35,10 +40,13 @@ export default function JobCreatePage() {
 		inputData: {},
 		expectedOutput: "",
 		budget: 0,
-		currency: "USDC",
+		currency: "ETH", // 默认使用 ETH
 		estimatedDuration: undefined,
 		matchingMode: MatchingMode.SMART,
 	})
+
+	// 截止日期 (添加)
+	const [deadline, setDeadline] = useState<string>("") // YYYY-MM-DD format
 
 	// UI state
 	const [capabilityInput, setCapabilityInput] = useState("")
@@ -65,6 +73,12 @@ export default function JobCreatePage() {
 		}
 		if (!formData.budget || formData.budget <= 0) {
 			newErrors.budget = "预算必须大于0"
+		}
+		if (!deadline) {
+			newErrors.deadline = "请选择截止日期"
+		}
+		if (formData.currency !== "ETH") {
+			newErrors.currency = "当前仅支持 ETH 支付"
 		}
 
 		setErrors(newErrors)
@@ -116,6 +130,12 @@ export default function JobCreatePage() {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 
+		// 检查钱包连接
+		if (!isConnected || !address) {
+			toast.error("请先连接钱包")
+			return
+		}
+
 		if (!validateForm()) {
 			toast.error("请检查表单填写")
 			return
@@ -124,25 +144,60 @@ export default function JobCreatePage() {
 		try {
 			setLoading(true)
 
+			// 1️⃣ 先在链上创建任务并托管资金
+			toast.info("正在发起链上交易...")
+
+			const deadlineTimestamp = Math.floor(new Date(deadline).getTime() / 1000)
+
+			const { txHash: hash } = await createJobOnChain(
+				formData.budget!.toString(),
+				deadlineTimestamp,
+			)
+
+			toast.success("交易已提交，等待确认...")
+
+			// 2️⃣ 等待交易确认 - 使用 viem 的 waitForTransactionReceipt
+			const { waitForTransactionReceipt } = await import("wagmi/actions")
+			const { config } = await import("../wagmi.config")
+
+			const txReceipt = await waitForTransactionReceipt(config, {
+				hash,
+				timeout: 60_000, // 60秒超时
+			})
+
+			// 3️⃣ 解析链上 jobId
+			const chainJobId = parseJobCreatedEvent(txReceipt)
+			toast.success(`链上任务创建成功！ID: ${chainJobId}`)
+
+			// 4️⃣ 同步到后端数据库
 			const jobData: CreateJobDto = {
 				title: formData.title!,
 				description: formData.description!,
 				category: formData.category!,
 				tags: formData.tags,
 				requiredCapabilities: formData.requiredCapabilities!,
-				inputData: { content: inputDataText.trim() || "" }, // 简化：直接传文本
+				inputData: { content: inputDataText.trim() || "" },
 				expectedOutput: formData.expectedOutput || undefined,
 				budget: formData.budget!,
 				currency: formData.currency,
 				estimatedDuration: formData.estimatedDuration || undefined,
-				matchingMode: formData.matchingMode, // 添加匹配模式
+				matchingMode: formData.matchingMode,
+				// 链上数据
+				chainJobId: chainJobId.toString(),
+				chainTxHash: hash,
+				chainDeadline: deadlineTimestamp.toString(),
 			}
 
 			const job = await jobApi.createJob(jobData)
 			toast.success("任务创建成功！")
 			navigate(`/jobs/${job.id}`)
-		} catch (error: any) {
-			toast.error(error.response?.data?.message || "创建失败")
+		} catch (error) {
+			console.error("Job creation error:", error)
+			if (error instanceof Error) {
+				toast.error(error.message || "创建失败")
+			} else {
+				toast.error("创建失败，请重试")
+			}
 		} finally {
 			setLoading(false)
 		}
@@ -422,47 +477,54 @@ export default function JobCreatePage() {
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							{/* Budget */}
 							<div>
-								<Label htmlFor="budget">预算 *</Label>
-								<div className="flex gap-2">
-									<Input
-										id="budget"
-										type="number"
-										min="0"
-										step="0.01"
-										value={formData.budget}
-										onChange={(e) =>
-											setFormData({
-												...formData,
-												budget: Number(e.target.value),
-											})
-										}
-										className={`flex-1 ${errors.budget ? "border-red-300" : ""}`}
-										placeholder="50"
-									/>
-									<Select
-										value={formData.currency}
-										onValueChange={(value) =>
-											setFormData({ ...formData, currency: value })
-										}
-									>
-										<SelectTrigger className="w-32">
-											<SelectValue />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="USDC">USDC</SelectItem>
-											<SelectItem value="USDT">USDT</SelectItem>
-											<SelectItem value="ETH">ETH</SelectItem>
-										</SelectContent>
-									</Select>
-								</div>
+								<Label htmlFor="budget">预算 (ETH) *</Label>
+								<Input
+									id="budget"
+									type="number"
+									min="0"
+									step="0.001"
+									value={formData.budget}
+									onChange={(e) =>
+										setFormData({
+											...formData,
+											budget: Number(e.target.value),
+										})
+									}
+									className={errors.budget ? "border-red-300" : ""}
+									placeholder="0.01"
+								/>
 								{errors.budget && (
 									<p className="mt-1 text-sm text-red-600">{errors.budget}</p>
 								)}
+								<p className="mt-1 text-sm text-gray-500">
+									💰 资金将托管到智能合约，完成后自动支付给 Agent
+								</p>
+							</div>
+
+							{/* Deadline */}
+							<div>
+								<Label htmlFor="deadline">截止日期 *</Label>
+								<Input
+									id="deadline"
+									type="date"
+									value={deadline}
+									onChange={(e) => setDeadline(e.target.value)}
+									min={new Date().toISOString().split("T")[0]}
+									className={errors.deadline ? "border-red-300" : ""}
+								/>
+								{errors.deadline && (
+									<p className="mt-1 text-sm text-red-600">{errors.deadline}</p>
+								)}
+								<p className="mt-1 text-sm text-gray-500">
+									⏰ 超时后将自动退款
+								</p>
 							</div>
 
 							{/* Estimated Duration */}
-							<div>
-								<Label htmlFor="estimatedDuration">预计耗时（分钟）</Label>
+							<div className="md:col-span-2">
+								<Label htmlFor="estimatedDuration">
+									预计耗时（分钟，可选）
+								</Label>
 								<Input
 									id="estimatedDuration"
 									type="number"
@@ -477,6 +539,7 @@ export default function JobCreatePage() {
 										})
 									}
 									placeholder="60"
+									className="max-w-xs"
 								/>
 							</div>
 						</div>

@@ -79,6 +79,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.3.11",
     "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "@openzeppelin/contracts": "^5.4.0",
     "@playwright/test": "^1.57.0",
     "@soda/friendly-errors-webpack-plugin": "^1.8.1",
     "@swc/core": "^1.15.8",

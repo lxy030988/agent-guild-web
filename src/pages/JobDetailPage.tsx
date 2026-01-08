@@ -4,6 +4,8 @@ import ReactMarkdown from "react-markdown"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import remarkGfm from "remark-gfm"
 import { toast } from "sonner"
+import { useAccount } from "wagmi"
+import { waitForTransactionReceipt } from "wagmi/actions"
 import JobStatusBadge from "../components/JobStatusBadge"
 import { Button } from "../components/ui/button"
 import { Label } from "../components/ui/label"
@@ -17,6 +19,7 @@ import {
 import { Textarea } from "../components/ui/textarea"
 import { useAuth } from "../hooks/useAuth"
 import { useConfirm } from "../hooks/useConfirm"
+import { useJobContract } from "../hooks/useJobContract"
 import {
 	jobLoadingAtom,
 	jobRecommendationsAtom,
@@ -24,9 +27,9 @@ import {
 } from "../store/jobAtoms"
 import { type Agent, agentApi } from "../utils/agent-api"
 import {
+	jobApi,
 	JobCategoryLabels,
 	JobStatus,
-	jobApi,
 	MatchingMode,
 	MatchingModeDescriptions,
 	MatchingModeLabels,
@@ -35,12 +38,17 @@ import {
 	type JobApplication,
 	jobApplicationApi,
 } from "../utils/job-application-api"
+import { config } from "../wagmi.config"
 
 export default function JobDetailPage() {
 	const { id } = useParams<{ id: string }>()
 	const _navigate = useNavigate()
 	const { user } = useAuth()
 	const { confirm, ConfirmDialog } = useConfirm()
+
+	const { address, isConnected } = useAccount()
+	const { assignAgentOnChain, completeJobOnChain, cancelJobOnChain } =
+		useJobContract()
 
 	const [job, setJob] = useAtom(selectedJobAtom)
 	const [recommendations, setRecommendations] = useAtom(jobRecommendationsAtom)
@@ -186,12 +194,65 @@ export default function JobDetailPage() {
 
 		try {
 			setActionLoading(true)
+
+			// 智能匹配模式：需要先上链 assignAgent 再 completeJob
+			if (job.matchingMode === MatchingMode.SMART && job.chainJobId) {
+				toast.info("正在调用智能合约...")
+
+				// 1. 获取 Agent Owner 的钱包地址
+				const agentOwnerAddress = job.assignedAgent?.owner?.walletAddress
+				if (!agentOwnerAddress) {
+					throw new Error("找不到 Agent 钱包地址")
+				}
+
+				// 2. 先调用 assignAgent
+				toast.info("正在分配 Agent...")
+				const { txHash: assignHash } = await assignAgentOnChain(
+					BigInt(job.chainJobId),
+					agentOwnerAddress,
+				)
+
+				// 等待分配交易确认
+				await waitForTransactionReceipt(config, {
+					hash: assignHash,
+					timeout: 60_000,
+				})
+				toast.success("Agent 已分配！")
+
+				// 3. 再调用 completeJob 支付
+				toast.info("正在支付...")
+				const { txHash: completeHash } = await completeJobOnChain(
+					BigInt(job.chainJobId),
+				)
+
+				// 等待支付交易确认
+				await waitForTransactionReceipt(config, {
+					hash: completeHash,
+					timeout: 60_000,
+				})
+
+				toast.success(`资金已支付给 ${job.assignedAgent?.name || "Agent"}！`)
+			} else if (job.matchingMode !== MatchingMode.SMART && job.chainJobId) {
+				// 手动匹配模式：已经 assign过了，直接 complete
+				toast.info("正在支付...")
+				const { txHash } = await completeJobOnChain(BigInt(job.chainJobId))
+
+				await waitForTransactionReceipt(config, {
+					hash: txHash,
+					timeout: 60_000,
+				})
+
+				toast.success(`资金已支付给 ${job.assignedAgent?.name || "Agent"}！`)
+			}
+
+			// 4. 更新后端状态
 			await jobApi.approveJob(job.id, rating, feedback)
 			await loadJob()
 			setShowApproveModal(false)
 			toast.success("验收通过")
 		} catch (error: any) {
-			toast.error(error.response?.data?.message || "验收失败")
+			console.error("Approve error:", error)
+			toast.error(error.message || error.response?.data?.message || "验收失败")
 		} finally {
 			setActionLoading(false)
 		}
@@ -204,6 +265,43 @@ export default function JobDetailPage() {
 
 		try {
 			setActionLoading(true)
+
+			// 手动选择模式：需要先调用链上 assignAgent
+			if (job.chainJobId) {
+				// 找到被选中的 Agent
+				const selectedRec = recommendations.find((r) => r.agent.id === agentId)
+				if (!selectedRec) {
+					toast.error("找不到选中的 Agent")
+					return
+				}
+
+				const agentOwnerAddress = selectedRec.agent.owner?.walletAddress
+				if (!agentOwnerAddress) {
+					toast.error("Agent 钱包地址无效")
+					return
+				}
+
+				toast.info("正在调用智能合约...")
+
+				// 调用链上 assignAgent
+				const { txHash } = await assignAgentOnChain(
+					BigInt(job.chainJobId),
+					agentOwnerAddress,
+				)
+
+				// 等待交易确认
+				const { waitForTransactionReceipt } = await import("wagmi/actions")
+				const { config } = await import("../wagmi.config")
+
+				await waitForTransactionReceipt(config, {
+					hash: txHash,
+					timeout: 60_000,
+				})
+
+				toast.success("链上分配成功！")
+			}
+
+			// 更新后端状态
 			await jobApi.updateJob(job.id, {
 				assignedAgentId: agentId,
 				status: JobStatus.MATCHED,
@@ -211,7 +309,8 @@ export default function JobDetailPage() {
 			await loadJob()
 			toast.success("Agent 已成功分配")
 		} catch (error: any) {
-			toast.error(error.response?.data?.message || "分配失败")
+			console.error("Assign error:", error)
+			toast.error(error.message || error.response?.data?.message || "分配失败")
 		} finally {
 			setActionLoading(false)
 		}
@@ -264,13 +363,54 @@ export default function JobDetailPage() {
 
 		try {
 			setActionLoading(true)
+
+			// 找到对应的申请
+			const application = applications.find((app) => app.id === applicationId)
+			if (!application) {
+				toast.error("找不到申请")
+				return
+			}
+
+			// 如果有 chainJobId，先调用链上 assignAgent
+			if (job && job.chainJobId) {
+				const agentOwnerAddress = application.agent?.owner?.walletAddress
+				if (!agentOwnerAddress) {
+					toast.error("Agent 钱包地址无效")
+					return
+				}
+
+				toast.info("正在调用智能合约...")
+
+				// 调用链上 assignAgent
+				const { txHash } = await assignAgentOnChain(
+					BigInt(job.chainJobId),
+					agentOwnerAddress,
+				)
+
+				// 等待交易确认
+				const { waitForTransactionReceipt } = await import("wagmi/actions")
+				const { config } = await import("../wagmi.config")
+
+				await waitForTransactionReceipt(config, {
+					hash: txHash,
+					timeout: 60_000,
+				})
+
+				toast.success("链上分配成功！")
+			}
+
+			// 更新后端状态
 			await jobApplicationApi.updateApplicationStatus(applicationId, "ACCEPTED")
 			await loadJob()
 			await loadApplications()
 			toast.success("已接受申请")
 		} catch (error: unknown) {
-			const err = error as { response?: { data?: { message?: string } } }
-			toast.error(err.response?.data?.message || "操作失败")
+			const err = error as {
+				response?: { data?: { message?: string } }
+				message?: string
+			}
+			console.error("Accept application error:", err)
+			toast.error(err.message || err.response?.data?.message || "操作失败")
 		} finally {
 			setActionLoading(false)
 		}

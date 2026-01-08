@@ -74,6 +74,10 @@ export interface Job {
 	feedback: string | null
 	rating: number | null
 	metadata: any | null
+	// 区块链相关字段
+	chainJobId: string | null
+	chainTxHash: string | null
+	chainDeadline: string | null
 	owner: {
 		id: number
 		walletAddress: string
@@ -139,6 +143,10 @@ export interface CreateJobDto {
 	estimatedDuration?: number
 	deadline?: string
 	matchingMode?: MatchingMode
+	// 智能合约字段（创建任务后从链上获取）
+	chainJobId?: string
+	chainTxHash?: string
+	chainDeadline?: string
 }
 
 /**

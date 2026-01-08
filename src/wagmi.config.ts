@@ -16,7 +16,8 @@ export const hardhat = {
 export const CONTRACT_ADDRESSES: Record<number, Record<string, string>> = {
 	// 本地 Hardhat 网络合约地址
 	31337: {
-		SimpleStorage: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+		SimpleStorage: "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+		JobEscrow: "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
 	},
 	// Sepolia 测试网络
 	[sepolia.id]: {
