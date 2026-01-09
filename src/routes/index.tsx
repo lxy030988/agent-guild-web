@@ -3,7 +3,6 @@ import type { RouteObject } from "react-router-dom"
 import { Loading, PageNotFoundView } from "@/components/common"
 import MainLayout from "@/layouts/Layout"
 
-const Home = lazy(() => import("@/pages/Home"))
 const Demo = lazy(() => import("@/pages/Demo"))
 const StorageDemo = lazy(() => import("@/pages/StorageDemo"))
 const ContractDemo = lazy(() => import("@/pages/ContractDemo"))
@@ -26,6 +25,9 @@ const MyJobsPage = lazy(() => import("@/pages/MyJobsPage"))
 const WalletPage = lazy(() => import("@/pages/WalletPage"))
 const BillsPage = lazy(() => import("@/pages/BillsPage"))
 
+// Dashboard page
+const DashboardPage = lazy(() => import("@/pages/DashboardPage"))
+
 const routes: RouteObject[] = [
 	{
 		path: "/",
@@ -35,7 +37,7 @@ const routes: RouteObject[] = [
 				index: true,
 				element: (
 					<Suspense fallback={<Loading />}>
-						<Home />
+						<DashboardPage />
 					</Suspense>
 				),
 			},
