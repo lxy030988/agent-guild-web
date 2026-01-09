@@ -6,6 +6,13 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/Pausable.sol';
 
 /**
+ * @notice Wallet 合约接口
+ */
+interface IWallet {
+  function depositEarnings(address user) external payable;
+}
+
+/**
  * @title JobEscrow
  * @dev Agent Guild 平台的任务托管合约
  *
@@ -57,6 +64,9 @@ contract JobEscrow is ReentrancyGuard, Ownable, Pausable {
   /// @notice 默认超时时长（30 天）
   uint256 public constant DEFAULT_TIMEOUT = 30 days;
 
+  /// @notice Wallet 合约地址
+  address public walletContract;
+
   // ============================================
   // 事件
   // ============================================
@@ -81,6 +91,9 @@ contract JobEscrow is ReentrancyGuard, Ownable, Pausable {
 
   /// @notice 平台手续费提取事件
   event PlatformFeesWithdrawn(address indexed to, uint256 amount);
+
+  /// @notice Wallet 合约地址更新事件
+  event WalletContractUpdated(address indexed oldContract, address indexed newContract);
 
   // ============================================
   // 修饰符
@@ -185,9 +198,15 @@ contract JobEscrow is ReentrancyGuard, Ownable, Pausable {
     // 累计平台手续费
     platformFeesCollected += platformFee;
 
-    // 转账给 Agent（防重入保护）
-    (bool success, ) = job.agent.call{ value: agentPayment }('');
-    require(success, 'Transfer to agent failed');
+    // 如果设置了 Wallet 合约，则存入 Wallet；否则直接转账
+    if (walletContract != address(0)) {
+      // 调用 Wallet 合约存入收益
+      IWallet(walletContract).depositEarnings{ value: agentPayment }(job.agent);
+    } else {
+      // 直接转账给 Agent（向后兼容）
+      (bool success, ) = job.agent.call{ value: agentPayment }('');
+      require(success, 'Transfer to agent failed');
+    }
 
     emit JobCompleted(_jobId, agentPayment, platformFee);
   }
@@ -306,6 +325,18 @@ contract JobEscrow is ReentrancyGuard, Ownable, Pausable {
    */
   function unpause() external onlyOwner {
     _unpause();
+  }
+
+  /**
+   * @notice 设置 Wallet 合约地址
+   * @dev 只有合约 owner 可以调用
+   * @param _walletContract Wallet 合约地址
+   */
+  function setWalletContract(address _walletContract) external onlyOwner {
+    address oldContract = walletContract;
+    walletContract = _walletContract;
+
+    emit WalletContractUpdated(oldContract, _walletContract);
   }
 
   // ============================================

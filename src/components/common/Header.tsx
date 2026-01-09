@@ -134,10 +134,16 @@ const Header = () => {
 							Jobs
 						</Link>
 						<Link
-							to="/contract-demo"
+							to="/wallet"
 							className="transition-all hover:text-primary text-foreground/70 hover:scale-105"
 						>
-							Network
+							Wallet
+						</Link>
+						<Link
+							to="/bills"
+							className="transition-all hover:text-primary text-foreground/70 hover:scale-105"
+						>
+							Bills
 						</Link>
 					</nav>
 				</div>

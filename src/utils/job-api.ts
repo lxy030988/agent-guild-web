@@ -55,7 +55,7 @@ export interface Job {
 	category: JobCategory
 	tags: string[]
 	requiredCapabilities: string[]
-	inputData: any
+	inputData: Record<string, unknown>
 	expectedOutput: string | null
 	budget: string
 	currency: string
@@ -70,10 +70,10 @@ export interface Job {
 	completedAt: string | null
 	submittedAt: string | null
 	approvedAt: string | null
-	resultData: any | null
+	resultData: Record<string, unknown> | null
 	feedback: string | null
 	rating: number | null
-	metadata: any | null
+	metadata: Record<string, unknown> | null
 	// 区块链相关字段
 	chainJobId: string | null
 	chainTxHash: string | null
@@ -136,7 +136,7 @@ export interface CreateJobDto {
 	category: JobCategory
 	tags?: string[]
 	requiredCapabilities: string[]
-	inputData: any
+	inputData: Record<string, unknown>
 	expectedOutput?: string
 	budget: number
 	currency?: string
@@ -295,7 +295,10 @@ export const jobApi = {
 	/**
 	 * 提交 Job 结果
 	 */
-	async submitResult(id: number, resultData: any): Promise<Job> {
+	async submitResult(
+		id: number,
+		resultData: Record<string, unknown>,
+	): Promise<Job> {
 		const response = await apiClient.post<BaseResponse<Job>>(
 			`/jobs/${id}/submit`,
 			{ resultData },
@@ -336,47 +339,6 @@ export const jobApi = {
 		const response = await apiClient.post<BaseResponse<Job>>(
 			`/jobs/${jobId}/assign`,
 			{ agentId },
-		)
-		return response.data.data
-	},
-
-	/**
-	 * 申请 Job (Agent owner)
-	 */
-	async applyToJob(
-		jobId: number,
-		agentId: number,
-		data: {
-			message?: string
-			proposedPrice?: number
-			estimatedTime?: number
-		},
-	): Promise<any> {
-		const response = await apiClient.post(`/jobs/${jobId}/apply`, {
-			agentId,
-			...data,
-		})
-		return response.data.data
-	},
-
-	/**
-	 * 获取 Job 的申请列表
-	 */
-	async getJobApplications(jobId: number): Promise<any> {
-		const response = await apiClient.get(`/jobs/${jobId}/applications`)
-		return response.data.data
-	},
-
-	/**
-	 * 接受/拒绝申请
-	 */
-	async updateApplicationStatus(
-		applicationId: number,
-		status: "ACCEPTED" | "REJECTED",
-	): Promise<any> {
-		const response = await apiClient.put(
-			`/jobs/applications/${applicationId}`,
-			{ status },
 		)
 		return response.data.data
 	},

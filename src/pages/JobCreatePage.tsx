@@ -16,8 +16,8 @@ import { Textarea } from "../components/ui/textarea"
 import { parseJobCreatedEvent, useJobContract } from "../hooks/useJobContract"
 import {
 	type CreateJobDto,
-	jobApi,
 	JobCategory,
+	jobApi,
 	MatchingMode,
 	MatchingModeDescriptions,
 	MatchingModeLabels,
@@ -149,8 +149,12 @@ export default function JobCreatePage() {
 
 			const deadlineTimestamp = Math.floor(new Date(deadline).getTime() / 1000)
 
+			if (!formData.budget) {
+				throw new Error("预算不能为空")
+			}
+
 			const { txHash: hash } = await createJobOnChain(
-				formData.budget!.toString(),
+				formData.budget.toString(),
 				deadlineTimestamp,
 			)
 
@@ -170,15 +174,24 @@ export default function JobCreatePage() {
 			toast.success(`链上任务创建成功！ID: ${chainJobId}`)
 
 			// 4️⃣ 同步到后端数据库
+			if (
+				!formData.title ||
+				!formData.description ||
+				!formData.category ||
+				!formData.requiredCapabilities
+			) {
+				throw new Error("请完整填写表单")
+			}
+
 			const jobData: CreateJobDto = {
-				title: formData.title!,
-				description: formData.description!,
-				category: formData.category!,
+				title: formData.title,
+				description: formData.description,
+				category: formData.category,
 				tags: formData.tags,
-				requiredCapabilities: formData.requiredCapabilities!,
+				requiredCapabilities: formData.requiredCapabilities,
 				inputData: { content: inputDataText.trim() || "" },
 				expectedOutput: formData.expectedOutput || undefined,
-				budget: formData.budget!,
+				budget: formData.budget,
 				currency: formData.currency,
 				estimatedDuration: formData.estimatedDuration || undefined,
 				matchingMode: formData.matchingMode,

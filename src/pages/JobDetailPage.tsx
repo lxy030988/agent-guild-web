@@ -4,7 +4,6 @@ import ReactMarkdown from "react-markdown"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import remarkGfm from "remark-gfm"
 import { toast } from "sonner"
-import { useAccount } from "wagmi"
 import { waitForTransactionReceipt } from "wagmi/actions"
 import JobStatusBadge from "../components/JobStatusBadge"
 import { Button } from "../components/ui/button"
@@ -27,9 +26,9 @@ import {
 } from "../store/jobAtoms"
 import { type Agent, agentApi } from "../utils/agent-api"
 import {
-	jobApi,
 	JobCategoryLabels,
 	JobStatus,
+	jobApi,
 	MatchingMode,
 	MatchingModeDescriptions,
 	MatchingModeLabels,
@@ -46,7 +45,7 @@ export default function JobDetailPage() {
 	const { user } = useAuth()
 	const { confirm, ConfirmDialog } = useConfirm()
 
-	const { address, isConnected } = useAccount()
+	// biome-ignore lint/correctness/noUnusedVariables: kept for user
 	const { assignAgentOnChain, completeJobOnChain, cancelJobOnChain } =
 		useJobContract()
 
@@ -152,8 +151,8 @@ export default function JobDetailPage() {
 			await jobApi.cancelJob(job.id)
 			await loadJob()
 			toast.success("任务已取消")
-		} catch (error: any) {
-			toast.error(error.response?.data?.message || "取消失败")
+		} catch (error: unknown) {
+			toast.error((error as any).response?.data?.message || "取消失败")
 		} finally {
 			setActionLoading(false)
 		}
@@ -167,8 +166,8 @@ export default function JobDetailPage() {
 			await jobApi.acceptJob(job.id)
 			await loadJob()
 			toast.success("任务已接受")
-		} catch (error: any) {
-			toast.error(error.response?.data?.message || "接受失败")
+		} catch (error: unknown) {
+			toast.error((error as any).response?.data?.message || "接受失败")
 		} finally {
 			setActionLoading(false)
 		}
@@ -182,8 +181,8 @@ export default function JobDetailPage() {
 			await jobApi.startJob(job.id)
 			await loadJob()
 			toast.success("任务已开始执行")
-		} catch (error: any) {
-			toast.error(error.response?.data?.message || "开始失败")
+		} catch (error: unknown) {
+			toast.error((error as any).response?.data?.message || "开始失败")
 		} finally {
 			setActionLoading(false)
 		}
@@ -250,9 +249,13 @@ export default function JobDetailPage() {
 			await loadJob()
 			setShowApproveModal(false)
 			toast.success("验收通过")
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error("Approve error:", error)
-			toast.error(error.message || error.response?.data?.message || "验收失败")
+			toast.error(
+				(error as any).message ||
+					(error as any).response?.data?.message ||
+					"验收失败",
+			)
 		} finally {
 			setActionLoading(false)
 		}
@@ -308,9 +311,13 @@ export default function JobDetailPage() {
 			})
 			await loadJob()
 			toast.success("Agent 已成功分配")
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error("Assign error:", error)
-			toast.error(error.message || error.response?.data?.message || "分配失败")
+			toast.error(
+				(error as any).message ||
+					(error as any).response?.data?.message ||
+					"分配失败",
+			)
 		} finally {
 			setActionLoading(false)
 		}
@@ -372,7 +379,7 @@ export default function JobDetailPage() {
 			}
 
 			// 如果有 chainJobId，先调用链上 assignAgent
-			if (job && job.chainJobId) {
+			if (job?.chainJobId) {
 				const agentOwnerAddress = application.agent?.owner?.walletAddress
 				if (!agentOwnerAddress) {
 					toast.error("Agent 钱包地址无效")
@@ -659,18 +666,22 @@ export default function JobDetailPage() {
 													)
 												}
 												// 如果是对象且有 content 字段（JobCreatePage 默认格式）
-												if (job.inputData.content) {
+												const inputObj = job.inputData as Record<
+													string,
+													unknown
+												>
+												if (inputObj.content) {
 													return (
 														<p className="whitespace-pre-wrap text-gray-700">
-															{job.inputData.content}
+															{inputObj.content as string}
 														</p>
 													)
 												}
 												// 如果是对象且有 code 字段
-												if (job.inputData.code) {
+												if (inputObj.code) {
 													return (
 														<pre className="text-sm text-gray-700 overflow-x-auto">
-															<code>{job.inputData.code}</code>
+															<code>{inputObj.code as string}</code>
 														</pre>
 													)
 												}
@@ -704,11 +715,19 @@ export default function JobDetailPage() {
 										<Label>结果内容</Label>
 										<div className="prose prose-sm max-w-none bg-gray-50 p-4 rounded border border-gray-200 mt-1">
 											<ReactMarkdown remarkPlugins={[remarkGfm]}>
-												{typeof job.resultData === "string"
-													? job.resultData
-													: job.resultData?.text ||
-														job.resultData?.output ||
-														JSON.stringify(job.resultData, null, 2)}
+												{(() => {
+													if (typeof job.resultData === "string")
+														return job.resultData
+													const resObj = job.resultData as Record<
+														string,
+														unknown
+													>
+													return (
+														(resObj?.text as string) ||
+														(resObj?.output as string) ||
+														JSON.stringify(job.resultData, null, 2)
+													)
+												})()}
 											</ReactMarkdown>
 										</div>
 									</div>

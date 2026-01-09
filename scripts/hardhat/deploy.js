@@ -15,10 +15,28 @@ async function main() {
   await jobEscrow.waitForDeployment();
   console.log(`✅ JobEscrow deployed at: ${jobEscrow.target}`);
 
+  // 部署 Wallet
+  const Wallet = await ethers.getContractFactory("Wallet");
+  const wallet = await Wallet.deploy();
+  await wallet.waitForDeployment();
+  console.log(`✅ Wallet deployed at: ${wallet.target}`);
+
+  // 配置 Wallet 合约：设置 JobEscrow 为授权合约
+  console.log("\n⚙️  Configuring contracts...");
+  const setJobEscrowTx = await wallet.setJobEscrowContract(jobEscrow.target);
+  await setJobEscrowTx.wait();
+  console.log("✅ Wallet: JobEscrow contract address set");
+
+  // 配置 JobEscrow 合约：设置 Wallet 合约地址
+  const setWalletTx = await jobEscrow.setWalletContract(wallet.target);
+  await setWalletTx.wait();
+  console.log("✅ JobEscrow: Wallet contract address set");
+
   console.log("\n📋 Contract Addresses:");
   console.log("================================");
   console.log(`SimpleStorage: "${simpleStorage.target}"`);
   console.log(`JobEscrow: "${jobEscrow.target}"`);
+  console.log(`Wallet: "${wallet.target}"`);
   console.log("================================");
   console.log("\n💡 Copy these addresses to src/wagmi.config.ts");
 }

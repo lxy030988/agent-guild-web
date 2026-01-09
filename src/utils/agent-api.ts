@@ -43,7 +43,7 @@ export interface Agent {
 	tags: string[]
 	status: AgentStatus
 	capabilities: string[]
-	configuration: any
+	configuration: Record<string, unknown>
 	endpointUrl: string
 	endpointAuthType: string
 	healthCheckUrl: string | null
@@ -80,9 +80,9 @@ export interface CreateAgentDto {
 	endpointAuthType?: "public" | "bearer" | "api-key"
 	healthCheckUrl?: string
 	timeoutMs?: number
-	configuration?: any
-	inputSchema?: any
-	outputSchema?: any
+	configuration?: Record<string, unknown>
+	inputSchema?: Record<string, unknown>
+	outputSchema?: Record<string, unknown>
 }
 
 /**

@@ -25,7 +25,7 @@ const AgentCreatePage = () => {
 		category: AgentCategory.OTHERS,
 		tags: ["AI"], // 后端验证：至少一个标签
 		endpointUrl: "",
-		endpointAuthType: "public" as any,
+		endpointAuthType: "public" as "public" | "bearer" | "api-key",
 		capabilities: [] as string[],
 		timeoutMs: 30000,
 	})
