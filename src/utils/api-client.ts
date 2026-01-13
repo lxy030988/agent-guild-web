@@ -5,7 +5,9 @@ import axios, {
 } from "axios"
 
 // API 基础 URL（根据环境变量配置）
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000"
+const BASE_URL =
+	(import.meta as unknown as { env: Record<string, string> }).env
+		.VITE_API_URL || "http://localhost:3000"
 
 /**
  * 创建 Axios 实例
@@ -23,9 +25,13 @@ const apiClient: AxiosInstance = axios.create({
  */
 apiClient.interceptors.request.use(
 	(config: InternalAxiosRequestConfig) => {
-		const token = localStorage.getItem("access_token")
+		let token = localStorage.getItem("access_token")
 
-		if (token && config.headers) {
+		if (token && token !== "null" && config.headers) {
+			// 如果 token 包含在引号中（Jotai atomWithStorage 存入时会 JSON 序列化），需要去引号
+			if (token.startsWith('"') && token.endsWith('"')) {
+				token = token.slice(1, -1)
+			}
 			config.headers.Authorization = `Bearer ${token}`
 		}
 
