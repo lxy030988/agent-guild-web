@@ -28,6 +28,10 @@ const BillsPage = lazy(() => import("@/pages/BillsPage"))
 // Dashboard page
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"))
 
+// DAO pages
+const DAOPage = lazy(() => import("@/pages/DAOPage"))
+const DisputeDetailPage = lazy(() => import("@/pages/DisputeDetailPage"))
+
 const routes: RouteObject[] = [
 	{
 		path: "/",
@@ -144,6 +148,22 @@ const routes: RouteObject[] = [
 				element: (
 					<Suspense fallback={<Loading />}>
 						<BillsPage />
+					</Suspense>
+				),
+			},
+			{
+				path: "dao",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<DAOPage />
+					</Suspense>
+				),
+			},
+			{
+				path: "dao/:id",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<DisputeDetailPage />
 					</Suspense>
 				),
 			},

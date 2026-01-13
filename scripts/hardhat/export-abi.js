@@ -19,6 +19,7 @@ function toConstantName(contractName) {
 
 /**
  * 递归扫描 artifacts/contracts 目录，找到所有合约
+ * 只导出主合约文件，过滤掉 Interface 等辅助合约
  */
 function findContracts(dir, contracts = []) {
   if (!fs.existsSync(dir)) {
@@ -32,15 +33,20 @@ function findContracts(dir, contracts = []) {
     const stat = fs.statSync(fullPath);
 
     if (stat.isDirectory()) {
+      // 从目录名推断主合约名（去掉 .sol 后缀）
+      const expectedContractName = path.basename(file, ".sol");
+      
       // 递归扫描子目录
       findContracts(fullPath, contracts);
-    } else if (file.endsWith(".json") && !file.endsWith(".dbg.json")) {
-      // 找到合约 JSON 文件
-      const contractName = path.basename(file, ".json");
-      contracts.push({
-        name: contractName,
-        artifactPath: fullPath,
-      });
+      
+      // 检查是否存在与目录名匹配的主合约 JSON 文件
+      const mainContractPath = path.join(fullPath, `${expectedContractName}.json`);
+      if (fs.existsSync(mainContractPath)) {
+        contracts.push({
+          name: expectedContractName,
+          artifactPath: mainContractPath,
+        });
+      }
     }
   }
 

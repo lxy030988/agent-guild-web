@@ -346,6 +346,19 @@ export const JOB_ESCROW_ABI = [
 		type: "function",
 	},
 	{
+		inputs: [],
+		name: "disputeResolver",
+		outputs: [
+			{
+				internalType: "address",
+				name: "",
+				type: "address",
+			},
+		],
+		stateMutability: "view",
+		type: "function",
+	},
+	{
 		inputs: [
 			{
 				internalType: "uint256",
@@ -557,6 +570,55 @@ export const JOB_ESCROW_ABI = [
 	{
 		inputs: [],
 		name: "renounceOwnership",
+		outputs: [],
+		stateMutability: "nonpayable",
+		type: "function",
+	},
+	{
+		inputs: [
+			{
+				internalType: "uint256",
+				name: "_jobId",
+				type: "uint256",
+			},
+			{
+				internalType: "uint256",
+				name: "_agentAmount",
+				type: "uint256",
+			},
+			{
+				internalType: "uint256",
+				name: "_ownerAmount",
+				type: "uint256",
+			},
+		],
+		name: "resolveDisputedJob",
+		outputs: [],
+		stateMutability: "nonpayable",
+		type: "function",
+	},
+	{
+		inputs: [
+			{
+				internalType: "address",
+				name: "_disputeResolver",
+				type: "address",
+			},
+		],
+		name: "setDisputeResolver",
+		outputs: [],
+		stateMutability: "nonpayable",
+		type: "function",
+	},
+	{
+		inputs: [
+			{
+				internalType: "uint256",
+				name: "_jobId",
+				type: "uint256",
+			},
+		],
+		name: "setDisputed",
 		outputs: [],
 		stateMutability: "nonpayable",
 		type: "function",

@@ -33,6 +33,8 @@ export enum JobStatus {
 	COMPLETED = "COMPLETED",
 	CANCELLED = "CANCELLED",
 	DISPUTED = "DISPUTED",
+	RESOLVED_COMPLETED = "RESOLVED_COMPLETED",
+	RESOLVED_CANCELLED = "RESOLVED_CANCELLED",
 }
 
 /**
@@ -368,6 +370,8 @@ export const JobStatusLabels: Record<JobStatus, string> = {
 	[JobStatus.COMPLETED]: "已完成",
 	[JobStatus.CANCELLED]: "已取消",
 	[JobStatus.DISPUTED]: "争议中",
+	[JobStatus.RESOLVED_COMPLETED]: "争议解决-已支付",
+	[JobStatus.RESOLVED_CANCELLED]: "争议解决-已退款",
 }
 
 /**
@@ -384,6 +388,8 @@ export const JobStatusColors: Record<
 	[JobStatus.COMPLETED]: "green",
 	[JobStatus.CANCELLED]: "gray",
 	[JobStatus.DISPUTED]: "red",
+	[JobStatus.RESOLVED_COMPLETED]: "green",
+	[JobStatus.RESOLVED_CANCELLED]: "gray",
 }
 
 /**

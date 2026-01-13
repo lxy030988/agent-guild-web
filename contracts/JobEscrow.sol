@@ -35,7 +35,8 @@ contract JobEscrow is ReentrancyGuard, Ownable, Pausable {
     InProgress, // 进行中：任务执行中
     Submitted, // 已提交：等待验收
     Completed, // 已完成：资金已释放
-    Cancelled // 已取消：资金已退款
+    Cancelled, // 已取消：资金已退款
+    Disputed // 有争议：资金已锁定
   }
 
   /// @notice 任务结构体
@@ -66,6 +67,9 @@ contract JobEscrow is ReentrancyGuard, Ownable, Pausable {
 
   /// @notice Wallet 合约地址
   address public walletContract;
+
+  /// @notice 争议解决合约地址
+  address public disputeResolver;
 
   // ============================================
   // 事件
@@ -110,6 +114,12 @@ contract JobEscrow is ReentrancyGuard, Ownable, Pausable {
   modifier onlyAssignedAgent(uint256 _jobId) {
     require(jobs[_jobId].exists, 'Job does not exist');
     require(jobs[_jobId].agent == msg.sender, 'Not the assigned agent');
+    _;
+  }
+
+  /// @notice 只有争议解决合约可以调用
+  modifier onlyDisputeResolver() {
+    require(msg.sender == disputeResolver, 'Not the dispute resolver');
     _;
   }
 
@@ -185,6 +195,7 @@ contract JobEscrow is ReentrancyGuard, Ownable, Pausable {
 
     require(job.status != JobStatus.Completed, 'Job already completed');
     require(job.status != JobStatus.Cancelled, 'Job is cancelled');
+    require(job.status != JobStatus.Disputed, 'Job is in dispute');
     require(job.agent != address(0), 'No agent assigned');
 
     uint256 totalAmount = job.budget;
@@ -222,6 +233,7 @@ contract JobEscrow is ReentrancyGuard, Ownable, Pausable {
     Job storage job = jobs[_jobId];
 
     require(job.status == JobStatus.Open || job.status == JobStatus.Matched, 'Cannot cancel job in current status');
+    require(job.status != JobStatus.Disputed, 'Job is in dispute');
 
     uint256 refundAmount = job.budget;
     job.status = JobStatus.Cancelled;
@@ -337,6 +349,56 @@ contract JobEscrow is ReentrancyGuard, Ownable, Pausable {
     walletContract = _walletContract;
 
     emit WalletContractUpdated(oldContract, _walletContract);
+  }
+
+  /**
+   * @notice 设置争议解决合约地址
+   * @param _disputeResolver 争议解决合约地址
+   */
+  function setDisputeResolver(address _disputeResolver) external onlyOwner {
+    disputeResolver = _disputeResolver;
+  }
+
+  /**
+   * @notice 将任务标记为争议中（锁定资金）
+   * @dev 仅争议解决合约可调用
+   */
+  function setDisputed(uint256 _jobId) external onlyDisputeResolver jobExists(_jobId) {
+    jobs[_jobId].status = JobStatus.Disputed;
+  }
+
+  /**
+   * @notice 解决争议任务并分发资金
+   * @dev 仅争议解决合约可调用。资金按决议比例分发给 Agent 和 Owner
+   */
+  function resolveDisputedJob(
+    uint256 _jobId,
+    uint256 _agentAmount,
+    uint256 _ownerAmount
+  ) external onlyDisputeResolver nonReentrant jobExists(_jobId) {
+    Job storage job = jobs[_jobId];
+    require(job.status == JobStatus.Disputed, 'Job is not in dispute');
+    require(_agentAmount + _ownerAmount <= job.budget, 'Exceeds budget');
+
+    job.status = JobStatus.Completed;
+
+    // 分发给 Agent
+    if (_agentAmount > 0) {
+      if (walletContract != address(0)) {
+        IWallet(walletContract).depositEarnings{ value: _agentAmount }(job.agent);
+      } else {
+        (bool success, ) = job.agent.call{ value: _agentAmount }('');
+        require(success, 'Agent payout failed');
+      }
+    }
+
+    // 退款给 Owner
+    if (_ownerAmount > 0) {
+      (bool success, ) = job.owner.call{ value: _ownerAmount }('');
+      require(success, 'Owner refund failed');
+    }
+
+    emit JobCompleted(_jobId, _agentAmount, 0); // 这里简单重用事件
   }
 
   // ============================================

@@ -21,6 +21,12 @@ async function main() {
   await wallet.waitForDeployment();
   console.log(`✅ Wallet deployed at: ${wallet.target}`);
 
+  // 部署 DisputeResolution
+  const DisputeResolution = await ethers.getContractFactory("DisputeResolution");
+  const disputeResolution = await DisputeResolution.deploy(jobEscrow.target);
+  await disputeResolution.waitForDeployment();
+  console.log(`✅ DisputeResolution deployed at: ${disputeResolution.target}`);
+
   // 配置 Wallet 合约：设置 JobEscrow 为授权合约
   console.log("\n⚙️  Configuring contracts...");
   const setJobEscrowTx = await wallet.setJobEscrowContract(jobEscrow.target);
@@ -32,11 +38,17 @@ async function main() {
   await setWalletTx.wait();
   console.log("✅ JobEscrow: Wallet contract address set");
 
+  // 配置 JobEscrow 合约：设置 DisputeResolver 地址
+  const setResolverTx = await jobEscrow.setDisputeResolver(disputeResolution.target);
+  await setResolverTx.wait();
+  console.log("✅ JobEscrow: DisputeResolver contract address set");
+
   console.log("\n📋 Contract Addresses:");
   console.log("================================");
   console.log(`SimpleStorage: "${simpleStorage.target}"`);
   console.log(`JobEscrow: "${jobEscrow.target}"`);
   console.log(`Wallet: "${wallet.target}"`);
+  console.log(`DisputeResolution: "${disputeResolution.target}"`);
   console.log("================================");
   console.log("\n💡 Copy these addresses to src/wagmi.config.ts");
 }

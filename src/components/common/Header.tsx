@@ -145,6 +145,12 @@ const Header = () => {
 						>
 							Bills
 						</Link>
+						<Link
+							to="/dao"
+							className="transition-all hover:text-indigo-600 text-foreground/70 hover:scale-105 font-bold"
+						>
+							DAO
+						</Link>
 					</nav>
 				</div>
 

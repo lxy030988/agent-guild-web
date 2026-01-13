@@ -4,7 +4,9 @@ import ReactMarkdown from "react-markdown"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import remarkGfm from "remark-gfm"
 import { toast } from "sonner"
-import { waitForTransactionReceipt } from "wagmi/actions"
+import { useWaitForTransactionReceipt } from "wagmi"
+import { readContract, waitForTransactionReceipt } from "wagmi/actions"
+import { DISPUTE_RESOLUTION_ABI } from "../abis/DisputeResolution"
 import JobStatusBadge from "../components/JobStatusBadge"
 import { Button } from "../components/ui/button"
 import { Label } from "../components/ui/label"
@@ -18,6 +20,7 @@ import {
 import { Textarea } from "../components/ui/textarea"
 import { useAuth } from "../hooks/useAuth"
 import { useConfirm } from "../hooks/useConfirm"
+import { useDisputeContract } from "../hooks/useDisputeContract"
 import { useJobContract } from "../hooks/useJobContract"
 import {
 	jobLoadingAtom,
@@ -25,6 +28,7 @@ import {
 	selectedJobAtom,
 } from "../store/jobAtoms"
 import { type Agent, agentApi } from "../utils/agent-api"
+import { disputeApi } from "../utils/disputeApi"
 import {
 	JobCategoryLabels,
 	JobStatus,
@@ -48,6 +52,8 @@ export default function JobDetailPage() {
 	// biome-ignore lint/correctness/noUnusedVariables: kept for user
 	const { assignAgentOnChain, completeJobOnChain, cancelJobOnChain } =
 		useJobContract()
+	const { createDispute: createDisputeOnChain, hash: disputeHash } =
+		useDisputeContract()
 
 	const [job, setJob] = useAtom(selectedJobAtom)
 	const [recommendations, setRecommendations] = useAtom(jobRecommendationsAtom)
@@ -96,6 +102,77 @@ export default function JobDetailPage() {
 	useEffect(() => {
 		loadJob()
 	}, [loadJob])
+
+	// 监听争议交易成功同步后端
+	const { data: disputeReceipt } = useWaitForTransactionReceipt({
+		hash: disputeHash,
+	})
+
+	useEffect(() => {
+		if (disputeReceipt && job && showRejectModal) {
+			const syncDispute = async () => {
+				try {
+					// 从日志中解析 disputeId
+					// DisputeCreated(uint256 indexed disputeId, ...)
+					// Indexed 参数在 topics 中：[signature, disputeId, jobId, creator]
+					const disputeIdTopic = disputeReceipt.logs[0]?.topics[1]
+					const chainDisputeId = disputeIdTopic
+						? BigInt(disputeIdTopic).toString()
+						: undefined
+
+					console.log("Captured chainDisputeId:", chainDisputeId)
+
+					// 从合约读取真实的截止时间
+					let votingEndsAt: string | undefined
+					if (chainDisputeId) {
+						try {
+							const { config } = await import("../wagmi.config")
+							const disputeData = (await readContract(config, {
+								address: disputeReceipt.to as `0x${string}`,
+								abi: DISPUTE_RESOLUTION_ABI,
+								functionName: "disputes",
+								args: [BigInt(chainDisputeId)],
+							})) as any
+
+							// disputes(id) 返回元组，votingEndsAt 是第 6 个元素 (index 5)
+							// 参考合约 struct Dispute: jobId(0), creator(1), evidenceHash(2), status(3), votingStartsAt(4), votingEndsAt(5)
+							const endsAtUnix = disputeData[5]
+							if (endsAtUnix) {
+								votingEndsAt = new Date(Number(endsAtUnix) * 1000).toISOString()
+								console.log("Captured real votingEndsAt:", votingEndsAt)
+							}
+						} catch (readErr) {
+							console.warn("Failed to read votingEndsAt from chain:", readErr)
+						}
+					}
+
+					const disputeTitle = `Dispute for Job #${job.id}: ${job.title}`
+					const safeTitle =
+						disputeTitle.length >= 5
+							? disputeTitle
+							: `Dispute for Job #${job.id}`
+
+					await disputeApi.createDispute({
+						jobId: job.id,
+						title: safeTitle,
+						reason: rejectReason,
+						evidence: "ipfs://manual_reject_evidence",
+						chainDisputeId,
+						votingEndsAt,
+					})
+					toast.success("争议已发起并同步")
+					setShowRejectModal(false)
+					await loadJob()
+				} catch (error) {
+					console.error("Sync dispute error:", error)
+					toast.error("争议已上链但同步后端失败")
+				} finally {
+					setActionLoading(false)
+				}
+			}
+			syncDispute()
+		}
+	}, [disputeReceipt, job, showRejectModal, rejectReason, loadJob])
 
 	// Permission checks
 	const isOwner = job && user && job.ownerId === user.id
@@ -148,11 +225,33 @@ export default function JobDetailPage() {
 
 		try {
 			setActionLoading(true)
+
+			// 如果有 chainJobId，先调用链上取消
+			if (job.chainJobId) {
+				toast.info("正在调用智能合约取消任务...")
+				const { txHash } = await cancelJobOnChain(BigInt(job.chainJobId))
+
+				// 等待交易确认
+				const { waitForTransactionReceipt } = await import("wagmi/actions")
+				const { config } = await import("../wagmi.config")
+
+				await waitForTransactionReceipt(config, {
+					hash: txHash,
+					timeout: 60_000,
+				})
+				toast.success("链上任务已成功取消并退款")
+			}
+
 			await jobApi.cancelJob(job.id)
 			await loadJob()
 			toast.success("任务已取消")
 		} catch (error: unknown) {
-			toast.error((error as any).response?.data?.message || "取消失败")
+			console.error("Cancel error:", error)
+			toast.error(
+				(error as any).message ||
+					(error as any).response?.data?.message ||
+					"取消失败",
+			)
 		} finally {
 			setActionLoading(false)
 		}
@@ -324,13 +423,37 @@ export default function JobDetailPage() {
 	}
 
 	const handleReject = async () => {
-		if (!job || !rejectReason.trim()) {
+		if (!isOwner || !job) return
+
+		const trimmedReason = rejectReason.trim()
+		if (!trimmedReason) {
 			toast.error("请填写拒绝原因")
+			return
+		}
+
+		// 后端 CreateDisputeDto 要求 reason 最少 20 字符
+		if (job.chainJobId && trimmedReason.length < 20) {
+			toast.error("拒绝原因太短", {
+				description: `发起争议需要至少 20 个字的详细描述（当前 ${trimmedReason.length} 字），以便 DAO 成员投票参考。`,
+			})
 			return
 		}
 
 		try {
 			setActionLoading(true)
+
+			// 如果是链上任务，发起争议
+			if (job.chainJobId) {
+				toast.info("正在调起争议合约...")
+				createDisputeOnChain(
+					BigInt(job.chainJobId),
+					"ipfs://manual_reject_evidence",
+				)
+				// 后续同步逻辑由于 useDisputeContract 的异步性，放在上面的 useEffect 中处理
+				return
+			}
+
+			// 仅更新后端状态（非链上任务）
 			await jobApi.rejectJob(job.id, rejectReason)
 			await loadJob()
 			setShowRejectModal(false)
@@ -339,7 +462,9 @@ export default function JobDetailPage() {
 			const err = error as { response?: { data?: { message?: string } } }
 			toast.error(err.response?.data?.message || "拒绝失败")
 		} finally {
-			setActionLoading(false)
+			if (!job.chainJobId) {
+				setActionLoading(false)
+			}
 		}
 	}
 
@@ -1029,10 +1154,17 @@ export default function JobDetailPage() {
 									value={rejectReason}
 									onChange={(e) => setRejectReason(e.target.value)}
 									rows={4}
-									placeholder="请说明拒绝原因..."
+									placeholder="请详细说明拒绝原因（发起争议需至少 20 字）..."
 									required
 									className="mt-2"
 								/>
+								{job?.chainJobId &&
+									rejectReason.length > 0 &&
+									rejectReason.length < 20 && (
+										<p className="text-xs text-red-500 mt-1">
+											还需输入 {20 - rejectReason.length} 个字
+										</p>
+									)}
 							</div>
 						</div>
 						<div className="flex items-center gap-3 mt-6">
