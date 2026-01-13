@@ -38,6 +38,7 @@ export default function DisputeDetailPage() {
 	const [loading, setLoading] = useState(true)
 	const [voteLoading, setVoteLoading] = useState(false)
 	const [selectedChoice, setSelectedChoice] = useState<VoteChoice | null>(null)
+	const [isResolvingDispute, setIsResolvingDispute] = useState(false) // 新增：标识是否在 resolve
 
 	const { vote, resolveDispute, isConfirming, isSuccess, hash } =
 		useDisputeContract()
@@ -66,6 +67,7 @@ export default function DisputeDetailPage() {
 		try {
 			setVoteLoading(true)
 			setSelectedChoice(choice)
+			setIsResolvingDispute(false) // 明确标识这是投票操作
 
 			// 1. 调用链上投票
 			// choice 映射: APPROVE=0, REJECT=1, ABSTAIN=2 (根据合约枚举顺序)
@@ -93,6 +95,7 @@ export default function DisputeDetailPage() {
 		if (!id) return
 		try {
 			setVoteLoading(true)
+			setIsResolvingDispute(true) // 明确标识这是 resolve 操作
 
 			// 使用真实的链上 ID (chainDisputeId) 进行合约交互
 			const contractDisputeId = dispute?.chainDisputeId
@@ -105,6 +108,7 @@ export default function DisputeDetailPage() {
 				description: error.message,
 			})
 			setVoteLoading(false)
+			setIsResolvingDispute(false)
 		}
 	}
 
@@ -138,18 +142,20 @@ export default function DisputeDetailPage() {
 			toast.error("Blockchain resolution success, backend refresh needed")
 		} finally {
 			setVoteLoading(false)
+			setIsResolvingDispute(false)
 		}
 	}, [id, loadDispute])
 
 	// 监听合约交易成功，同步到后端
 	useEffect(() => {
 		if (isSuccess && hash && dispute && id) {
-			if (selectedChoice) {
-				// 同步投票
-				syncVoteToBackend()
-			} else {
+			// 使用明确的标志位判断操作类型
+			if (isResolvingDispute) {
 				// 同步解决状态
 				syncResolutionToBackend()
+			} else if (selectedChoice) {
+				// 同步投票
+				syncVoteToBackend()
 			}
 		}
 	}, [
@@ -157,6 +163,7 @@ export default function DisputeDetailPage() {
 		hash,
 		dispute,
 		id,
+		isResolvingDispute,
 		selectedChoice,
 		syncVoteToBackend,
 		syncResolutionToBackend,

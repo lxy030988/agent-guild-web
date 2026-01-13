@@ -49,7 +49,6 @@ export default function JobDetailPage() {
 	const { user } = useAuth()
 	const { confirm, ConfirmDialog } = useConfirm()
 
-	// biome-ignore lint/correctness/noUnusedVariables: kept for user
 	const { assignAgentOnChain, completeJobOnChain, cancelJobOnChain } =
 		useJobContract()
 	const { createDispute: createDisputeOnChain, hash: disputeHash } =

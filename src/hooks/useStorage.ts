@@ -101,7 +101,6 @@ export function useBatchStorage<T extends Record<string, unknown>>(
 	const updateData = useCallback(
 		(updates: Partial<T>) => {
 			const promises = Object.entries(updates).map(([key, value]) =>
-				// biome-ignore lint/suspicious/noExplicitAny: localforage expects any for storage items
 				storage.setItem(key, value as any),
 			)
 
