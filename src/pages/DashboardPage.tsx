@@ -25,9 +25,9 @@ import type { Agent } from "../utils/agent-api"
 import { agentApi } from "../utils/agent-api"
 import {
 	type DashboardStats,
-	dashboardApi,
 	type JobsBreakdown,
 	type RevenueChartData,
+	dashboardApi,
 } from "../utils/dashboard-api"
 import { type Job, JobStatus, jobApi } from "../utils/job-api"
 
@@ -297,7 +297,9 @@ export default function DashboardPage() {
 										/>
 										<YAxis />
 										<Tooltip
-											formatter={(value: number) => `${value.toFixed(4)} ETH`}
+											formatter={(value: number | string | undefined) =>
+												`${Number(value || 0).toFixed(4)} ETH`
+											}
 											labelFormatter={(label) => `日期: ${label}`}
 										/>
 										<Legend />
@@ -558,7 +560,10 @@ export default function DashboardPage() {
 																		</span>
 																		{job.assignedAgent.rating && (
 																			<span className="text-xs text-gray-500">
-																				⭐ {job.assignedAgent.rating.toFixed(1)}
+																				⭐{" "}
+																				{Number(
+																					job.assignedAgent.rating,
+																				).toFixed(1)}
 																			</span>
 																		)}
 																	</div>

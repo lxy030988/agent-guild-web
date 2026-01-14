@@ -30,9 +30,9 @@ import {
 import { type Agent, agentApi } from "../utils/agent-api"
 import { disputeApi } from "../utils/disputeApi"
 import {
+	jobApi,
 	JobCategoryLabels,
 	JobStatus,
-	jobApi,
 	MatchingMode,
 	MatchingModeDescriptions,
 	MatchingModeLabels,
@@ -88,9 +88,14 @@ export default function JobDetailPage() {
 			const jobData = await jobApi.getJob(Number(id))
 			setJob(jobData)
 
-			// Load recommendations
-			const recs = await jobApi.getRecommendations(Number(id))
-			setRecommendations(recs)
+			// Only load recommendations for non-SMART modes
+			// SMART mode auto-assigns, no need to show recommendations
+			if (jobData.matchingMode !== MatchingMode.SMART) {
+				const recs = await jobApi.getRecommendations(Number(id))
+				setRecommendations(recs)
+			} else {
+				setRecommendations([])
+			}
 		} catch (error) {
 			console.error("Failed to load job:", error)
 		} finally {
@@ -886,9 +891,9 @@ export default function JobDetailPage() {
 
 					{/* Right Column - Conditional based on matchingMode */}
 					<div className="space-y-6">
-						{/* For MANUAL/SMART/OPEN_MARKET: Show recommendations with assign button */}
+						{/* For MANUAL/OPEN_MARKET: Show recommendations with assign button */}
+						{/* SMART mode auto-assigns, so no need to show recommendations */}
 						{(job.matchingMode === MatchingMode.MANUAL ||
-							job.matchingMode === MatchingMode.SMART ||
 							job.matchingMode === MatchingMode.OPEN_MARKET) &&
 							job.status === JobStatus.OPEN &&
 							recommendations.length > 0 && (
