@@ -37,6 +37,7 @@ export const userStorage = localforage.createInstance({
 /**
  * 存储工具类
  */
+// biome-ignore lint/complexity/noStaticOnlyClass: Legacy API keeps class wrapper for public imports.
 export class StorageManager {
 	/**
 	 * 获取当前使用的存储引擎

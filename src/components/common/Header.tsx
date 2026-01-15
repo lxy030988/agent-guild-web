@@ -116,7 +116,7 @@ const Header = () => {
 							Dashboard
 						</Link>
 						<Link
-							to="/demo"
+							to="/agents"
 							className="transition-all hover:text-primary text-foreground/70 hover:scale-105"
 						>
 							Agents

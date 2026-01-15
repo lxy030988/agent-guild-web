@@ -8,6 +8,8 @@ const Demo = lazy(() => import("@/pages/Demo"))
 const StorageDemo = lazy(() => import("@/pages/StorageDemo"))
 const ContractDemo = lazy(() => import("@/pages/ContractDemo"))
 const ComponentDemo = lazy(() => import("@/pages/ComponentDemo"))
+const AgentList = lazy(() => import("@/pages/AgentList"))
+const AgentDetail = lazy(() => import("@/pages/AgentDetail"))
 
 // Auth pages
 const ProfilePage = lazy(() => import("@/pages/ProfilePage"))
@@ -64,6 +66,22 @@ const routes: RouteObject[] = [
 				element: (
 					<Suspense fallback={<Loading />}>
 						<ProfilePage />
+					</Suspense>
+				),
+			},
+			{
+				path: "agents",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<AgentList />
+					</Suspense>
+				),
+			},
+			{
+				path: "agents/:id",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<AgentDetail />
 					</Suspense>
 				),
 			},
