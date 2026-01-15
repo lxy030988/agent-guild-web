@@ -1,6 +1,7 @@
 import { memo } from "react"
 import { Outlet } from "react-router-dom"
 import Header from "@/components/common/Header"
+import Toaster from "@/components/common/Toaster"
 import { useQuicklink } from "@/hooks/useQuicklink"
 
 const MainLayout = () => {
@@ -19,6 +20,7 @@ const MainLayout = () => {
 			<main className="mx-auto px-4">
 				<Outlet />
 			</main>
+			<Toaster />
 		</>
 	)
 }

@@ -61,8 +61,8 @@ export class StorageManager {
 	/**
 	 * 获取存储的长度
 	 */
-	static async length(storage = appStorage): Promise<number> {
-		return storage.length()
+	static async lengths(storage = appStorage): Promise<number> {
+		return storage?.length()
 	}
 
 	/**
