@@ -122,6 +122,12 @@ const Header = () => {
 							Dashboard
 						</Link>
 						<Link
+							to="/agents"
+							className="transition-all hover:text-primary text-foreground/70 hover:scale-105"
+						>
+							Agents
+						</Link>
+						<Link
 							to="/jobs"
 							className="transition-all hover:text-primary text-foreground/70 hover:scale-105"
 						>

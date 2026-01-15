@@ -37,6 +37,7 @@ export const userStorage = localforage.createInstance({
 /**
  * 存储工具类
  */
+// biome-ignore lint/complexity/noStaticOnlyClass: Legacy API keeps class wrapper for public imports.
 export class StorageManager {
 	/**
 	 * 获取当前使用的存储引擎
@@ -61,8 +62,8 @@ export class StorageManager {
 	/**
 	 * 获取存储的长度
 	 */
-	static async length(storage = appStorage): Promise<number> {
-		return storage.length()
+	static async lengths(storage = appStorage): Promise<number> {
+		return storage?.length()
 	}
 
 	/**
