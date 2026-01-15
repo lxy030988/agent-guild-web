@@ -196,6 +196,51 @@ SEPOLIA_RPC_URL=your_rpc_url
 METAMASK_PRIVATE_KEY=your_test_private_key
 ```
 
+前端 API 配置（开发模式可选）：
+
+```env
+VITE_API_URL=http://localhost:3000
+```
+
+### Agent API 示例
+
+```bash
+curl \"${VITE_API_URL:-http://localhost:3000}/agents?category=Design&minRating=4&page=1&limit=12\"
+```
+
+```bash
+# 获取 Agent 详情
+curl \"${VITE_API_URL:-http://localhost:3000}/agents/1\"
+```
+
+```bash
+# 创建 Agent（需要 Authorization）
+curl -X POST \"${VITE_API_URL:-http://localhost:3000}/agents\" \
+  -H \"Content-Type: application/json\" \
+  -H \"Authorization: Bearer <token>\" \
+  -d '{
+    \"title\": \"Growth Strategist\",
+    \"description\": \"Full-funnel growth playbooks and experimentation support.\",
+    \"category\": \"Growth\",
+    \"location\": { \"city\": \"Shanghai\", \"country\": \"China\", \"isRemote\": true },
+    \"services\": [{ \"name\": \"Growth Audit\", \"description\": \"Deep dive\", \"duration\": 60, \"price\": 200, \"currency\": \"USD\" }],
+    \"pricing\": [{ \"name\": \"Starter\", \"price\": 200, \"currency\": \"USD\", \"unit\": \"hour\" }],
+    \"availability\": { \"timezone\": \"Asia/Shanghai\", \"schedule\": { \"monday\": [], \"tuesday\": [], \"wednesday\": [], \"thursday\": [], \"friday\": [], \"saturday\": [], \"sunday\": [] } },
+    \"responseTime\": \"< 1 hour\",
+    \"languages\": [\"中文\", \"English\"],
+    \"tags\": [\"growth\", \"audit\"],
+    \"isActive\": true
+  }'
+```
+
+```bash
+# 更新 Agent（需要 Authorization）
+curl -X PATCH \"${VITE_API_URL:-http://localhost:3000}/agents/1\" \
+  -H \"Content-Type: application/json\" \
+  -H \"Authorization: Bearer <token>\" \
+  -d '{\"title\": \"Growth Strategist v2\", \"isActive\": false}'
+```
+
 ### TypeScript 路径别名
 
 ```typescript
