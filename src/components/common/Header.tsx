@@ -122,6 +122,12 @@ const Header = () => {
 							Agents
 						</Link>
 						<Link
+							to="/wallet"
+							className="transition-all hover:text-primary text-foreground/70 hover:scale-105"
+						>
+							Wallet
+						</Link>
+						<Link
 							to="/contract-demo"
 							className="transition-all hover:text-primary text-foreground/70 hover:scale-105"
 						>
@@ -236,6 +242,13 @@ const Header = () => {
 										<span className="font-semibold text-sm">
 											Profile Details
 										</span>
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onClick={() => navigate("/wallet")}
+										className="rounded-lg cursor-pointer py-2.5"
+									>
+										<Wallet className="mr-3 h-4 w-4 text-primary" />
+										<span className="font-semibold text-sm">Wallet</span>
 									</DropdownMenuItem>
 								</div>
 								<DropdownMenuSeparator className="opacity-50" />

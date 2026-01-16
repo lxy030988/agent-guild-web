@@ -1,7 +1,7 @@
-import { memo } from "react"
-import { Outlet } from "react-router-dom"
 import Header from "@/components/common/Header"
 import { useQuicklink } from "@/hooks/useQuicklink"
+import { memo } from "react"
+import { Outlet } from "react-router-dom"
 
 const MainLayout = () => {
 	// 启用 Quicklink 预加载
@@ -16,7 +16,7 @@ const MainLayout = () => {
 	return (
 		<>
 			<Header />
-			<main className="mx-auto px-4">
+			<main className="mx-auto">
 				<Outlet />
 			</main>
 		</>
