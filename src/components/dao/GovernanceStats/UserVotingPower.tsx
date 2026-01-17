@@ -16,12 +16,12 @@ export function UserVotingPower({ stats }: UserVotingPowerProps) {
 					<p className="text-sm text-muted-foreground uppercase tracking-wide">
 						Your Voting Power
 					</p>
-					<div className="flex items-center justify-center gap-2">
-						<h3 className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+					<div className="flex flex-wrap items-center justify-center gap-2">
+						<h3 className="text-5xl font-bold leading-none bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
 							{stats.votingPower.toLocaleString()}
 						</h3>
 						{stats.multiplier > 1 && (
-							<div className="flex items-center gap-1 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30">
+							<div className="flex items-center gap-1 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 whitespace-nowrap shrink-0">
 								<Zap className="h-4 w-4 text-purple-600 fill-current" />
 								<span className="text-sm font-bold text-purple-600">
 									{stats.multiplier}x

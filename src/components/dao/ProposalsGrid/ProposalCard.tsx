@@ -110,14 +110,14 @@ export function ProposalCard({ proposal, onVote, onView }: ProposalCardProps) {
 				<div className="border-t border-border/30" />
 
 				{/* Footer */}
-				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-3">
+				<div className="flex flex-wrap items-center justify-between gap-3">
+					<div className="flex items-center gap-3 min-w-0">
 						<ParticipantAvatars participants={proposal.participants} maxDisplay={3} size="sm" />
 						{isActive && <CountdownTimer endTime={proposal.endTime} />}
 					</div>
 
 					{/* Actions */}
-					<div className="flex gap-2">
+					<div className="flex gap-2 shrink-0">
 						<Button
 							variant="ghost"
 							size="sm"

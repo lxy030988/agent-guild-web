@@ -13,14 +13,6 @@ export function ProposalsGrid({ onVote, onView }: ProposalsGridProps) {
 	const { proposals, isLoading } = useProposals()
 	const [showFilters, setShowFilters] = useState(true)
 
-	if (isLoading) {
-		return (
-			<div className="flex items-center justify-center py-20">
-				<Loader2 className="h-8 w-8 animate-spin text-primary" />
-			</div>
-		)
-	}
-
 	return (
 		<div className="space-y-6">
 			{/* Header */}
@@ -49,7 +41,11 @@ export function ProposalsGrid({ onVote, onView }: ProposalsGridProps) {
 			)}
 
 			{/* Grid */}
-			{proposals.length === 0 ? (
+			{isLoading ? (
+				<div className="flex items-center justify-center py-20">
+					<Loader2 className="h-8 w-8 animate-spin text-primary" />
+				</div>
+			) : proposals.length === 0 ? (
 				<div className="text-center py-20">
 					<p className="text-muted-foreground">No proposals found</p>
 				</div>

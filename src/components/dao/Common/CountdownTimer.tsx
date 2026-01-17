@@ -45,7 +45,7 @@ export function CountdownTimer({
 	}, [endTime])
 
 	return (
-		<div className={`flex items-center gap-1 text-muted-foreground ${className}`}>
+		<div className={`flex items-center gap-1 text-muted-foreground whitespace-nowrap ${className}`}>
 			{showIcon && <Clock className="h-4 w-4" />}
 			<span className="text-sm">{timeLeft}</span>
 		</div>

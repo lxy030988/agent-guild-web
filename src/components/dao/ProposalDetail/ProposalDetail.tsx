@@ -41,9 +41,9 @@ export function ProposalDetail({
 					</div>
 				) : proposal ? (
 					<>
-						<DialogHeader>
-							<div className="flex items-start justify-between gap-4">
-								<div className="flex-1 space-y-2">
+						<DialogHeader className="pr-8">
+							<div className="flex flex-wrap items-start justify-between gap-4">
+								<div className="flex-1 min-w-0 space-y-2">
 									<div className="flex items-center gap-2">
 										<span className="text-sm font-mono text-muted-foreground">
 											#{proposal.id.toString().padStart(3, "0")}
@@ -52,7 +52,9 @@ export function ProposalDetail({
 									</div>
 									<DialogTitle className="text-2xl">{proposal.title}</DialogTitle>
 								</div>
-								<CountdownTimer endTime={proposal.endTime} />
+								<div className="flex items-center gap-2 shrink-0">
+									<CountdownTimer endTime={proposal.endTime} />
+								</div>
 							</div>
 							<DialogDescription className="text-left">
 								Created by{" "}
