@@ -44,8 +44,14 @@ interface AvailabilityPickerProps {
 	onChange: (availability: Availability) => void
 }
 
-const AvailabilityPicker = ({ availability, onChange }: AvailabilityPickerProps) => {
-	const updateDaySlots = (day: keyof WeeklySchedule, slots: Availability["schedule"][keyof WeeklySchedule]) => {
+const AvailabilityPicker = ({
+	availability,
+	onChange,
+}: AvailabilityPickerProps) => {
+	const updateDaySlots = (
+		day: keyof WeeklySchedule,
+		slots: Availability["schedule"][keyof WeeklySchedule],
+	) => {
 		onChange({
 			...availability,
 			schedule: {
@@ -131,7 +137,12 @@ const AvailabilityPicker = ({ availability, onChange }: AvailabilityPickerProps)
 											type="time"
 											value={slot.start}
 											onChange={(event) =>
-												handleSlotChange(day, index, "start", event.target.value)
+												handleSlotChange(
+													day,
+													index,
+													"start",
+													event.target.value,
+												)
 											}
 											className="w-32"
 										/>
@@ -155,9 +166,7 @@ const AvailabilityPicker = ({ availability, onChange }: AvailabilityPickerProps)
 									</div>
 								))
 							) : (
-								<p className="text-xs text-muted-foreground">
-									暂无可用时段
-								</p>
+								<p className="text-xs text-muted-foreground">暂无可用时段</p>
 							)}
 						</div>
 					</div>

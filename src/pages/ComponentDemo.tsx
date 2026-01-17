@@ -99,9 +99,7 @@ const ComponentDemo = () => {
 							<Card>
 								<CardHeader>
 									<CardTitle>Button 按钮</CardTitle>
-									<CardDescription>
-										支持多种变体和 loading 状态
-									</CardDescription>
+									<CardDescription>支持多种变体和 loading 状态</CardDescription>
 								</CardHeader>
 								<CardContent className="space-y-4">
 									<div className="flex flex-wrap gap-2">
@@ -131,9 +129,7 @@ const ComponentDemo = () => {
 							<Card>
 								<CardHeader>
 									<CardTitle>Input 输入框</CardTitle>
-									<CardDescription>
-										支持前后缀图标和错误状态
-									</CardDescription>
+									<CardDescription>支持前后缀图标和错误状态</CardDescription>
 								</CardHeader>
 								<CardContent className="space-y-4">
 									<div className="grid gap-4 sm:grid-cols-2">
@@ -175,9 +171,7 @@ const ComponentDemo = () => {
 							<Card>
 								<CardHeader>
 									<CardTitle>Textarea 文本域</CardTitle>
-									<CardDescription>
-										支持自动高度和字符计数
-									</CardDescription>
+									<CardDescription>支持自动高度和字符计数</CardDescription>
 								</CardHeader>
 								<CardContent className="space-y-4">
 									<div className="grid gap-4 sm:grid-cols-2">
@@ -229,9 +223,7 @@ const ComponentDemo = () => {
 							<Card>
 								<CardHeader>
 									<CardTitle>Checkbox 复选框</CardTitle>
-									<CardDescription>
-										支持选中、未选中和半选状态
-									</CardDescription>
+									<CardDescription>支持选中、未选中和半选状态</CardDescription>
 								</CardHeader>
 								<CardContent>
 									<div className="flex items-center space-x-4">
@@ -324,9 +316,7 @@ const ComponentDemo = () => {
 							<Card>
 								<CardHeader>
 									<CardTitle>Dialog 对话框</CardTitle>
-									<CardDescription>
-										支持多种尺寸，ESC 可关闭
-									</CardDescription>
+									<CardDescription>支持多种尺寸，ESC 可关闭</CardDescription>
 								</CardHeader>
 								<CardContent>
 									<div className="flex flex-wrap gap-2">
@@ -386,9 +376,7 @@ const ComponentDemo = () => {
 							<Card>
 								<CardHeader>
 									<CardTitle>Sheet 侧边栏</CardTitle>
-									<CardDescription>
-										支持左右方向的抽屉组件
-									</CardDescription>
+									<CardDescription>支持左右方向的抽屉组件</CardDescription>
 								</CardHeader>
 								<CardContent>
 									<div className="flex flex-wrap gap-2">
@@ -451,9 +439,7 @@ const ComponentDemo = () => {
 							<Card>
 								<CardHeader>
 									<CardTitle>SearchBar 搜索框</CardTitle>
-									<CardDescription>
-										支持 debounce 和清除按钮
-									</CardDescription>
+									<CardDescription>支持 debounce 和清除按钮</CardDescription>
 								</CardHeader>
 								<CardContent>
 									<div className="max-w-md">
@@ -487,9 +473,7 @@ const ComponentDemo = () => {
 							<Card>
 								<CardHeader>
 									<CardTitle>EmptyState 空状态</CardTitle>
-									<CardDescription>
-										自定义图标、文案和操作按钮
-									</CardDescription>
+									<CardDescription>自定义图标、文案和操作按钮</CardDescription>
 								</CardHeader>
 								<CardContent>
 									<div className="grid gap-8 sm:grid-cols-2">
@@ -564,10 +548,7 @@ const ComponentDemo = () => {
 											<AlertCircle className="mr-2 h-4 w-4" />
 											错误提示
 										</Button>
-										<Button
-											variant="outline"
-											onClick={() => toast("普通消息")}
-										>
+										<Button variant="outline" onClick={() => toast("普通消息")}>
 											<Info className="mr-2 h-4 w-4" />
 											普通提示
 										</Button>
@@ -575,9 +556,7 @@ const ComponentDemo = () => {
 											variant="outline"
 											onClick={() =>
 												toast.promise(
-													new Promise((resolve) =>
-														setTimeout(resolve, 2000),
-													),
+													new Promise((resolve) => setTimeout(resolve, 2000)),
 													{
 														loading: "加载中...",
 														success: "加载完成!",

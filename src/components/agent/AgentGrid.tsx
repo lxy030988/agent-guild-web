@@ -23,20 +23,11 @@ const AgentGrid = ({
 	)
 
 	return (
-		<div
-			className={cn(
-				"grid gap-6 sm:grid-cols-2 lg:grid-cols-3",
-				className,
-			)}
-		>
+		<div className={cn("grid gap-6 sm:grid-cols-2 lg:grid-cols-3", className)}>
 			{loading
 				? skeletonKeys.map((key) => <AgentCardSkeleton key={key} />)
 				: agents.map((agent) => (
-						<AgentCard
-							key={agent.id}
-							agent={agent}
-							onClick={onAgentClick}
-						/>
+						<AgentCard key={agent.id} agent={agent} onClick={onAgentClick} />
 					))}
 		</div>
 	)

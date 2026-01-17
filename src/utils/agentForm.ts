@@ -99,9 +99,7 @@ export const mapAgentToFormValues = (agent: Agent): AgentFormValues => ({
 	images: [],
 })
 
-export const buildAgentPayload = (
-	values: AgentFormValues,
-): CreateAgentDTO => ({
+export const buildAgentPayload = (values: AgentFormValues): CreateAgentDTO => ({
 	title: values.title.trim(),
 	description: values.description.trim(),
 	category: values.category.trim(),
@@ -140,7 +138,9 @@ export const buildAgentPayload = (
 		exceptions: values.availability.exceptions,
 	},
 	responseTime: values.responseTime.trim(),
-	languages: values.languages.map((language) => language.trim()).filter(Boolean),
+	languages: values.languages
+		.map((language) => language.trim())
+		.filter(Boolean),
 	tags: values.tags.map((tag) => tag.trim()).filter(Boolean),
 	isActive: values.isActive,
 })
@@ -161,7 +161,8 @@ export const validateAgentForm = (values: AgentFormValues): AgentFormErrors => {
 	}
 
 	if (!values.location.isRemote) {
-		const hasLocation = values.location.city.trim() && values.location.country.trim()
+		const hasLocation =
+			values.location.city.trim() && values.location.country.trim()
 		if (!hasLocation) {
 			errors.location = "线下服务需要填写城市和国家"
 		}

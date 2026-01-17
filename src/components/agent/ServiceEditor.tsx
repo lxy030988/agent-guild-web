@@ -75,104 +75,104 @@ const ServiceEditor = ({ services, errors, onChange }: ServiceEditorProps) => {
 						onDragOver={handleDragOver}
 						onDrop={() => handleDrop(index)}
 					>
-					<div className="flex items-center justify-between gap-3">
-						<div className="flex items-center gap-2 text-xs text-muted-foreground">
-							<GripVertical className="h-4 w-4" />
-							拖拽排序
-						</div>
-						<Button
-							type="button"
-							variant="ghost"
-							size="icon"
-							className="h-8 w-8"
-							onClick={() => handleRemove(index)}
-						>
-							<Trash2 className="h-4 w-4" />
-						</Button>
-					</div>
-					<div className="mt-3 grid gap-3 md:grid-cols-2">
-						<div className="space-y-2">
-							<Input
-								placeholder="服务名称"
-								value={service.name}
-								onChange={(event) =>
-									updateService(index, { name: event.target.value })
-								}
-								variant={errors?.[index]?.name ? "error" : "default"}
-							/>
-							{errors?.[index]?.name ? (
-								<p className="text-xs text-destructive">
-									{errors[index]?.name}
-								</p>
-							) : null}
-						</div>
-						<div className="grid grid-cols-3 gap-3">
-							<div>
-								<Input
-									type="number"
-									min={1}
-									placeholder="时长"
-									value={service.duration}
-									onChange={(event) =>
-										updateService(index, {
-											duration: Number(event.target.value),
-										})
-									}
-									variant={errors?.[index]?.duration ? "error" : "default"}
-								/>
-								{errors?.[index]?.duration ? (
-									<p className="text-xs text-destructive">
-										{errors[index]?.duration}
-									</p>
-								) : null}
+						<div className="flex items-center justify-between gap-3">
+							<div className="flex items-center gap-2 text-xs text-muted-foreground">
+								<GripVertical className="h-4 w-4" />
+								拖拽排序
 							</div>
-							<div>
-								<Input
-									type="number"
-									min={0}
-									placeholder="价格"
-									value={service.price}
-									onChange={(event) =>
-										updateService(index, {
-											price: Number(event.target.value),
-										})
-									}
-									variant={errors?.[index]?.price ? "error" : "default"}
-								/>
-								{errors?.[index]?.price ? (
-									<p className="text-xs text-destructive">
-										{errors[index]?.price}
-									</p>
-								) : null}
-							</div>
-							<Select
-								value={service.currency}
-								onValueChange={(value) =>
-									updateService(index, {
-										currency: value as ServiceInput["currency"],
-									})
-								}
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon"
+								className="h-8 w-8"
+								onClick={() => handleRemove(index)}
 							>
-								<SelectTrigger>
-									<SelectValue placeholder="货币" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="USD">USD</SelectItem>
-									<SelectItem value="ETH">ETH</SelectItem>
-								</SelectContent>
-							</Select>
+								<Trash2 className="h-4 w-4" />
+							</Button>
 						</div>
-					</div>
-					<div className="mt-3">
-						<Textarea
-							placeholder="服务描述"
-							value={service.description}
-							onChange={(event) =>
-								updateService(index, { description: event.target.value })
-							}
-							rows={3}
-						/>
-					</div>
+						<div className="mt-3 grid gap-3 md:grid-cols-2">
+							<div className="space-y-2">
+								<Input
+									placeholder="服务名称"
+									value={service.name}
+									onChange={(event) =>
+										updateService(index, { name: event.target.value })
+									}
+									variant={errors?.[index]?.name ? "error" : "default"}
+								/>
+								{errors?.[index]?.name ? (
+									<p className="text-xs text-destructive">
+										{errors[index]?.name}
+									</p>
+								) : null}
+							</div>
+							<div className="grid grid-cols-3 gap-3">
+								<div>
+									<Input
+										type="number"
+										min={1}
+										placeholder="时长"
+										value={service.duration}
+										onChange={(event) =>
+											updateService(index, {
+												duration: Number(event.target.value),
+											})
+										}
+										variant={errors?.[index]?.duration ? "error" : "default"}
+									/>
+									{errors?.[index]?.duration ? (
+										<p className="text-xs text-destructive">
+											{errors[index]?.duration}
+										</p>
+									) : null}
+								</div>
+								<div>
+									<Input
+										type="number"
+										min={0}
+										placeholder="价格"
+										value={service.price}
+										onChange={(event) =>
+											updateService(index, {
+												price: Number(event.target.value),
+											})
+										}
+										variant={errors?.[index]?.price ? "error" : "default"}
+									/>
+									{errors?.[index]?.price ? (
+										<p className="text-xs text-destructive">
+											{errors[index]?.price}
+										</p>
+									) : null}
+								</div>
+								<Select
+									value={service.currency}
+									onValueChange={(value) =>
+										updateService(index, {
+											currency: value as ServiceInput["currency"],
+										})
+									}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder="货币" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="USD">USD</SelectItem>
+										<SelectItem value="ETH">ETH</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+						</div>
+						<div className="mt-3">
+							<Textarea
+								placeholder="服务描述"
+								value={service.description}
+								onChange={(event) =>
+									updateService(index, { description: event.target.value })
+								}
+								rows={3}
+							/>
+						</div>
 					</li>
 				))}
 			</ul>

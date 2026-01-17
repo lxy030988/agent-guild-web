@@ -18,7 +18,11 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import type { Agent } from "@/types/agent"
-import type { AgentFormErrors, AgentFormValues, PricingInput } from "@/types/agentForm"
+import type {
+	AgentFormErrors,
+	AgentFormValues,
+	PricingInput,
+} from "@/types/agentForm"
 import {
 	buildAgentPayload,
 	createEmptyAgentForm,
@@ -39,7 +43,9 @@ interface AgentFormProps {
 	mode: "create" | "edit"
 	initialData?: Agent
 	submitting?: boolean
-	onSubmit: (payload: ReturnType<typeof buildAgentPayload>) => Promise<void> | void
+	onSubmit: (
+		payload: ReturnType<typeof buildAgentPayload>,
+	) => Promise<void> | void
 	onCancel?: () => void
 }
 
@@ -170,7 +176,9 @@ const AgentForm = ({
 								variant={errors.responseTime ? "error" : "default"}
 							/>
 							{errors.responseTime ? (
-								<p className="text-xs text-destructive">{errors.responseTime}</p>
+								<p className="text-xs text-destructive">
+									{errors.responseTime}
+								</p>
 							) : null}
 						</div>
 					</div>
@@ -379,9 +387,7 @@ const AgentForm = ({
 
 			<ImageUploader
 				images={values.images}
-				onChange={(files) =>
-					setValues((prev) => ({ ...prev, images: files }))
-				}
+				onChange={(files) => setValues((prev) => ({ ...prev, images: files }))}
 			/>
 
 			<Card className="glass-card">
@@ -393,9 +399,7 @@ const AgentForm = ({
 				<CardContent className="space-y-6">
 					<div>
 						<h3 className="text-sm font-semibold text-foreground">服务清单</h3>
-						<p className="text-xs text-muted-foreground">
-							可拖拽调整服务顺序
-						</p>
+						<p className="text-xs text-muted-foreground">可拖拽调整服务顺序</p>
 					</div>
 					<ServiceEditor
 						services={values.services}
@@ -409,7 +413,11 @@ const AgentForm = ({
 							<h3 className="text-sm font-semibold text-foreground">
 								套餐定价
 							</h3>
-							<Button type="button" variant="outline" onClick={handleAddPricing}>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={handleAddPricing}
+							>
 								新增套餐
 							</Button>
 						</div>
@@ -430,8 +438,7 @@ const AgentForm = ({
 											className="h-8 w-8"
 											onClick={() => handleRemovePricing(index)}
 										>
-											<span className="sr-only">删除</span>
-											×
+											<span className="sr-only">删除</span>×
 										</Button>
 									</div>
 									<div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -442,7 +449,9 @@ const AgentForm = ({
 												onChange={(event) =>
 													updatePricing(index, { name: event.target.value })
 												}
-												variant={errors.pricing?.[index]?.name ? "error" : "default"}
+												variant={
+													errors.pricing?.[index]?.name ? "error" : "default"
+												}
 											/>
 											{errors.pricing?.[index]?.name ? (
 												<p className="text-xs text-destructive">

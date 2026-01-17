@@ -30,9 +30,9 @@ import {
 import { type Agent, agentApi } from "../utils/agent-api"
 import { disputeApi } from "../utils/disputeApi"
 import {
-	jobApi,
 	JobCategoryLabels,
 	JobStatus,
+	jobApi,
 	MatchingMode,
 	MatchingModeDescriptions,
 	MatchingModeLabels,

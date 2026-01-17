@@ -24,10 +24,7 @@ export const agentApi = {
 		const response = await apiClient.post<Agent>("/agents", payload)
 		return response.data
 	},
-	updateAgent: async (
-		id: number,
-		payload: UpdateAgentDTO,
-	): Promise<Agent> => {
+	updateAgent: async (id: number, payload: UpdateAgentDTO): Promise<Agent> => {
 		const response = await apiClient.patch<Agent>(`/agents/${id}`, payload)
 		return response.data
 	},

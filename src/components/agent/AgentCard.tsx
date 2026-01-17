@@ -61,7 +61,9 @@ const AgentCard = ({
 			<CardHeader className="flex flex-row items-start gap-4 pb-3">
 				<Avatar className="h-12 w-12">
 					<AvatarImage
-						src={agent.user?.avatar || `https://avatar.vercel.sh/${agent.id}.png`}
+						src={
+							agent.user?.avatar || `https://avatar.vercel.sh/${agent.id}.png`
+						}
 						alt={agent.user?.name || agent.title}
 					/>
 					<AvatarFallback>{agent.title.slice(0, 1)}</AvatarFallback>
@@ -70,9 +72,7 @@ const AgentCard = ({
 					<h3 className="text-base font-semibold text-foreground">
 						{agent.title}
 					</h3>
-					<p className="text-sm text-muted-foreground">
-						{agent.category}
-					</p>
+					<p className="text-sm text-muted-foreground">{agent.category}</p>
 				</div>
 				<Badge variant={agent.isActive ? "success" : "secondary"}>
 					{agent.isActive ? "Available" : "Offline"}
@@ -102,11 +102,7 @@ const AgentCard = ({
 			</CardContent>
 			{showActions ? (
 				<CardFooter>
-					<Button
-						className="w-full"
-						variant="outline"
-						asChild
-					>
+					<Button className="w-full" variant="outline" asChild>
 						<Link to={`/agents/${agent.id}`} onClick={() => onClick?.(agent)}>
 							查看详情
 						</Link>

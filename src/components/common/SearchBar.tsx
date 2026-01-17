@@ -1,8 +1,8 @@
-import { Input } from "@/components/ui/input"
-import { cn } from "@/lib/utils"
 import { Search, X } from "lucide-react"
 import type * as React from "react"
 import { forwardRef, useEffect, useRef, useState } from "react"
+import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 
 export interface SearchBarProps
 	extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange"> {

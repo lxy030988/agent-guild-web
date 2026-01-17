@@ -1,7 +1,6 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query"
-
-import { agentApi } from "@/utils/agentApi"
 import type { AgentListQuery } from "@/types/agent"
+import { agentApi } from "@/utils/agentApi"
 
 const STALE_TIME_MS = 30 * 1000
 

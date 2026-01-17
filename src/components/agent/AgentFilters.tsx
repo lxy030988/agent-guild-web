@@ -52,10 +52,7 @@ const AgentFilters = ({
 	const maxPriceId = useId()
 	const sortId = useId()
 
-	const handleNumberChange = (
-		key: "minPrice" | "maxPrice",
-		value: string,
-	) => {
+	const handleNumberChange = (key: "minPrice" | "maxPrice", value: string) => {
 		const parsed = value ? Number(value) : undefined
 		onChange({
 			...filters,
@@ -138,15 +135,15 @@ const AgentFilters = ({
 					className="mt-2"
 					placeholder="输入城市/地区"
 					value={filters.location ?? ""}
-				onChange={(event) =>
-					onChange({
-						...filters,
-						location: event.target.value || undefined,
-					})
-				}
-				disabled={loading}
-			/>
-		</div>
+					onChange={(event) =>
+						onChange({
+							...filters,
+							location: event.target.value || undefined,
+						})
+					}
+					disabled={loading}
+				/>
+			</div>
 
 			<div className="min-w-[140px]">
 				<label
@@ -163,15 +160,15 @@ const AgentFilters = ({
 					<SelectTrigger id={ratingId} className="mt-2">
 						<SelectValue placeholder="全部" />
 					</SelectTrigger>
-				<SelectContent>
-					{ratingOptions.map((option) => (
-						<SelectItem key={option.label} value={option.value}>
-							{option.label}
-						</SelectItem>
-					))}
-				</SelectContent>
-			</Select>
-		</div>
+					<SelectContent>
+						{ratingOptions.map((option) => (
+							<SelectItem key={option.label} value={option.value}>
+								{option.label}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+			</div>
 
 			<div className="min-w-[120px]">
 				<label
@@ -185,12 +182,14 @@ const AgentFilters = ({
 					className="mt-2"
 					type="number"
 					min={0}
-				placeholder="0"
-				value={filters.minPrice ?? ""}
-				onChange={(event) => handleNumberChange("minPrice", event.target.value)}
-				disabled={loading}
-			/>
-		</div>
+					placeholder="0"
+					value={filters.minPrice ?? ""}
+					onChange={(event) =>
+						handleNumberChange("minPrice", event.target.value)
+					}
+					disabled={loading}
+				/>
+			</div>
 
 			<div className="min-w-[120px]">
 				<label
@@ -204,12 +203,14 @@ const AgentFilters = ({
 					className="mt-2"
 					type="number"
 					min={0}
-				placeholder="不限"
-				value={filters.maxPrice ?? ""}
-				onChange={(event) => handleNumberChange("maxPrice", event.target.value)}
-				disabled={loading}
-			/>
-		</div>
+					placeholder="不限"
+					value={filters.maxPrice ?? ""}
+					onChange={(event) =>
+						handleNumberChange("maxPrice", event.target.value)
+					}
+					disabled={loading}
+				/>
+			</div>
 
 			<div className="min-w-[160px]">
 				<label
@@ -221,36 +222,36 @@ const AgentFilters = ({
 				<Select
 					onValueChange={handleSortChange}
 					value={
-					filters.sortBy && filters.sortOrder
-						? `${filters.sortBy}:${filters.sortOrder}`
-						: "default"
+						filters.sortBy && filters.sortOrder
+							? `${filters.sortBy}:${filters.sortOrder}`
+							: "default"
 					}
 					disabled={loading}
 				>
 					<SelectTrigger id={sortId} className="mt-2">
 						<SelectValue placeholder="默认排序" />
 					</SelectTrigger>
-				<SelectContent>
-					{sortOptions.map((option) => (
-						<SelectItem key={option.label} value={option.value}>
-							{option.label}
-						</SelectItem>
-					))}
-				</SelectContent>
-			</Select>
-		</div>
+					<SelectContent>
+						{sortOptions.map((option) => (
+							<SelectItem key={option.label} value={option.value}>
+								{option.label}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+			</div>
 
-		<Button
-			variant="ghost"
-			className="gap-2"
-			onClick={onReset}
-			disabled={loading}
-			aria-label="重置筛选条件"
-		>
-			<RotateCcw className="h-4 w-4" />
-			重置
-		</Button>
-	</div>
+			<Button
+				variant="ghost"
+				className="gap-2"
+				onClick={onReset}
+				disabled={loading}
+				aria-label="重置筛选条件"
+			>
+				<RotateCcw className="h-4 w-4" />
+				重置
+			</Button>
+		</div>
 	)
 }
 

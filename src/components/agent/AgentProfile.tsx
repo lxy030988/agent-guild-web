@@ -28,7 +28,10 @@ const AgentProfile = ({ agent, isOwner, onMessage }: AgentProfileProps) => {
 					<div className="flex items-start gap-5">
 						<Avatar className="h-16 w-16">
 							<AvatarImage
-								src={agent.user?.avatar || `https://avatar.vercel.sh/${agent.id}.png`}
+								src={
+									agent.user?.avatar ||
+									`https://avatar.vercel.sh/${agent.id}.png`
+								}
 								alt={agent.user?.name || agent.title}
 							/>
 							<AvatarFallback>{agent.title.slice(0, 1)}</AvatarFallback>
