@@ -57,7 +57,6 @@ export const useWeb3Login = () => {
 
 				return response
 			} catch (err: unknown) {
-				// biome-ignore lint/suspicious/noExplicitAny: error object can have various structures
 				const error = err as any
 				const errorMessage =
 					error?.response?.data?.message || error?.message || "Login failed"

@@ -122,16 +122,34 @@ const Header = () => {
 							Dashboard
 						</Link>
 						<Link
+							to="/agents"
+							className="transition-all hover:text-primary text-foreground/70 hover:scale-105"
+						>
+							agents
+						</Link>
+						<Link
 							to="/jobs"
 							className="transition-all hover:text-primary text-foreground/70 hover:scale-105"
 						>
 							Jobs
 						</Link>
 						<Link
-							to="/agents"
+							to="/wallet"
 							className="transition-all hover:text-primary text-foreground/70 hover:scale-105"
 						>
-							agents
+							Wallet
+						</Link>
+						<Link
+							to="/bills"
+							className="transition-all hover:text-primary text-foreground/70 hover:scale-105"
+						>
+							Bills
+						</Link>
+						<Link
+							to="/dao"
+							className="transition-all hover:text-indigo-600 text-foreground/70 hover:scale-105 font-bold"
+						>
+							DAO
 						</Link>
 					</nav>
 				</div>

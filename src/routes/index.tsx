@@ -15,11 +15,27 @@ const Dashboard = lazy(() => import("@/pages/Dashboard"))
 // Auth pages
 const ProfilePage = lazy(() => import("@/pages/ProfilePage"))
 
+// Agent pages
+const AgentsPage = lazy(() => import("@/pages/AgentsPage"))
+const AgentDetailPage = lazy(() => import("@/pages/AgentDetailPage"))
+const AgentCreatePage = lazy(() => import("@/pages/AgentCreatePage"))
+
 // Jobs pages
 const JobsPage = lazy(() => import("@/pages/JobsPage"))
 const JobDetailPage = lazy(() => import("@/pages/JobDetailPage"))
 const JobCreatePage = lazy(() => import("@/pages/JobCreatePage"))
 const MyJobsPage = lazy(() => import("@/pages/MyJobsPage"))
+
+// Wallet & Bills pages
+const WalletPage = lazy(() => import("@/pages/WalletPage"))
+const BillsPage = lazy(() => import("@/pages/BillsPage"))
+
+// Dashboard page
+const DashboardPage = lazy(() => import("@/pages/DashboardPage"))
+
+// DAO pages
+const DAOPage = lazy(() => import("@/pages/DAOPage"))
+const DisputeDetailPage = lazy(() => import("@/pages/DisputeDetailPage"))
 
 const routes: RouteObject[] = [
 	{
@@ -30,7 +46,7 @@ const routes: RouteObject[] = [
 				index: true,
 				element: (
 					<Suspense fallback={<Loading />}>
-						<Home />
+						<DashboardPage />
 					</Suspense>
 				),
 			},
@@ -80,7 +96,15 @@ const routes: RouteObject[] = [
 				path: "agents",
 				element: (
 					<Suspense fallback={<Loading />}>
-						<AgentList />
+						<AgentsPage />
+					</Suspense>
+				),
+			},
+			{
+				path: "agents/create",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<AgentCreatePage />
 					</Suspense>
 				),
 			},
@@ -88,7 +112,7 @@ const routes: RouteObject[] = [
 				path: "agents/:id",
 				element: (
 					<Suspense fallback={<Loading />}>
-						<AgentDetail />
+						<AgentDetailPage />
 					</Suspense>
 				),
 			},
@@ -125,10 +149,34 @@ const routes: RouteObject[] = [
 				),
 			},
 			{
-				path: "dashboard",
+				path: "wallet",
 				element: (
 					<Suspense fallback={<Loading />}>
-						<Dashboard />
+						<WalletPage />
+					</Suspense>
+				),
+			},
+			{
+				path: "bills",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<BillsPage />
+					</Suspense>
+				),
+			},
+			{
+				path: "dao",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<DAOPage />
+					</Suspense>
+				),
+			},
+			{
+				path: "dao/:id",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<DisputeDetailPage />
 					</Suspense>
 				),
 			},
