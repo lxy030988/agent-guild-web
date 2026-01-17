@@ -1,7 +1,16 @@
+/*
+ * @Author: shasha0102 970284297@qq.com
+ * @Date: 2026-01-10 23:45:55
+ * @LastEditors: shasha0102 970284297@qq.com
+ * @LastEditTime: 2026-01-13 23:17:15
+ * @FilePath: /agent-guild-web/src/layouts/Layout.tsx
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
+import Header from "@/components/common/Header"
+import Toaster from "@/components/common/Toaster"
+import { useQuicklink } from "@/hooks/useQuicklink"
 import { memo } from "react"
 import { Outlet } from "react-router-dom"
-import Header from "@/components/common/Header"
-import { useQuicklink } from "@/hooks/useQuicklink"
 
 const MainLayout = () => {
 	// 启用 Quicklink 预加载
@@ -16,9 +25,10 @@ const MainLayout = () => {
 	return (
 		<>
 			<Header />
-			<main className="mx-auto px-4">
+			<main className="mx-auto">
 				<Outlet />
 			</main>
+			<Toaster />
 		</>
 	)
 }

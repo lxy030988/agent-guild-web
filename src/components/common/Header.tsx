@@ -116,7 +116,7 @@ const Header = () => {
 
 					<nav className="hidden md:flex items-center space-x-8 text-sm font-semibold">
 						<Link
-							to="/"
+							to="/dashboard"
 							className="transition-all hover:text-primary text-foreground/70 hover:scale-105"
 						>
 							Dashboard
@@ -126,6 +126,12 @@ const Header = () => {
 							className="transition-all hover:text-primary text-foreground/70 hover:scale-105"
 						>
 							Jobs
+						</Link>
+						<Link
+							to="/agents"
+							className="transition-all hover:text-primary text-foreground/70 hover:scale-105"
+						>
+							agents
 						</Link>
 					</nav>
 				</div>

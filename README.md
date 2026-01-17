@@ -196,6 +196,18 @@ SEPOLIA_RPC_URL=your_rpc_url
 METAMASK_PRIVATE_KEY=your_test_private_key
 ```
 
+前端 API 配置（开发模式可选）：
+
+```env
+VITE_API_URL=http://localhost:3000
+```
+
+### Agent API 示例
+
+```bash
+curl \"${VITE_API_URL:-http://localhost:3000}/agents?category=Design&minRating=4&page=1&limit=12\"
+```
+
 ### TypeScript 路径别名
 
 ```typescript

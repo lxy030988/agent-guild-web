@@ -7,6 +7,10 @@ const Demo = lazy(() => import("@/pages/Demo"))
 const Home = lazy(() => import("@/pages/Home"))
 const StorageDemo = lazy(() => import("@/pages/StorageDemo"))
 const ContractDemo = lazy(() => import("@/pages/ContractDemo"))
+const ComponentDemo = lazy(() => import("@/pages/ComponentDemo"))
+const AgentList = lazy(() => import("@/pages/AgentList"))
+const AgentDetail = lazy(() => import("@/pages/AgentDetail"))
+const Dashboard = lazy(() => import("@/pages/Dashboard"))
 
 // Auth pages
 const ProfilePage = lazy(() => import("@/pages/ProfilePage"))
@@ -57,10 +61,34 @@ const routes: RouteObject[] = [
 				),
 			},
 			{
+				path: "components",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<ComponentDemo />
+					</Suspense>
+				),
+			},
+			{
 				path: "profile",
 				element: (
 					<Suspense fallback={<Loading />}>
 						<ProfilePage />
+					</Suspense>
+				),
+			},
+			{
+				path: "agents",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<AgentList />
+					</Suspense>
+				),
+			},
+			{
+				path: "agents/:id",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<AgentDetail />
 					</Suspense>
 				),
 			},
@@ -93,6 +121,14 @@ const routes: RouteObject[] = [
 				element: (
 					<Suspense fallback={<Loading />}>
 						<JobDetailPage />
+					</Suspense>
+				),
+			},
+			{
+				path: "dashboard",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<Dashboard />
 					</Suspense>
 				),
 			},
