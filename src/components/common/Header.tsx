@@ -122,6 +122,12 @@ const Header = () => {
 							Agents
 						</Link>
 						<Link
+							to="/dao"
+							className="transition-all hover:text-primary text-foreground/70 hover:scale-105"
+						>
+							DAO
+						</Link>
+						<Link
 							to="/contract-demo"
 							className="transition-all hover:text-primary text-foreground/70 hover:scale-105"
 						>

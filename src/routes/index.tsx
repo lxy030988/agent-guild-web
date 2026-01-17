@@ -11,6 +11,9 @@ const ContractDemo = lazy(() => import("@/pages/ContractDemo"))
 // Auth pages
 const ProfilePage = lazy(() => import("@/pages/ProfilePage"))
 
+// DAO pages
+const DaoPage = lazy(() => import("@/pages/DaoPage"))
+
 const routes: RouteObject[] = [
 	{
 		path: "/",
@@ -55,6 +58,14 @@ const routes: RouteObject[] = [
 				element: (
 					<Suspense fallback={<Loading />}>
 						<ProfilePage />
+					</Suspense>
+				),
+			},
+			{
+				path: "dao",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<DaoPage />
 					</Suspense>
 				),
 			},
