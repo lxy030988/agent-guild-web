@@ -37,11 +37,11 @@ export const userStorage = localforage.createInstance({
 /**
  * 存储工具类
  */
-export class StorageManager {
+export const StorageManager = {
 	/**
 	 * 获取当前使用的存储引擎
 	 */
-	static async getDriver(storage = appStorage): Promise<string> {
+	async getDriver(storage = appStorage): Promise<string> {
 		const driver = storage.driver()
 		const driverNames = {
 			[localforage.INDEXEDDB]: "IndexedDB",
@@ -49,33 +49,33 @@ export class StorageManager {
 			[localforage.LOCALSTORAGE]: "localStorage",
 		}
 		return driverNames[driver] || driver
-	}
+	},
 
 	/**
 	 * 获取存储的所有键
 	 */
-	static async keys(storage = appStorage): Promise<string[]> {
+	async keys(storage = appStorage): Promise<string[]> {
 		return storage.keys()
-	}
+	},
 
 	/**
 	 * 获取存储的长度
 	 */
-	static async length(storage = appStorage): Promise<number> {
+	async length(storage = appStorage): Promise<number> {
 		return storage.length()
-	}
+	},
 
 	/**
 	 * 清空存储
 	 */
-	static async clear(storage = appStorage): Promise<void> {
+	async clear(storage = appStorage): Promise<void> {
 		return storage.clear()
-	}
+	},
 
 	/**
 	 * 批量设置数据
 	 */
-	static async setItems<T = unknown>(
+	async setItems<T = unknown>(
 		items: Record<string, T>,
 		storage = appStorage,
 	): Promise<void> {
@@ -83,12 +83,12 @@ export class StorageManager {
 			storage.setItem(key, value),
 		)
 		await Promise.all(promises)
-	}
+	},
 
 	/**
 	 * 批量获取数据
 	 */
-	static async getItems<T = unknown>(
+	async getItems<T = unknown>(
 		keys: string[],
 		storage = appStorage,
 	): Promise<Record<string, T | null>> {
@@ -104,7 +104,7 @@ export class StorageManager {
 			},
 			{} as Record<string, T | null>,
 		)
-	}
+	},
 }
 
 export default appStorage

@@ -1,4 +1,5 @@
 import { useAtom } from "jotai"
+import { useCallback } from "react"
 import {
 	isAuthenticatedAtom,
 	tokenAtom,
@@ -18,25 +19,28 @@ export const useAuth = () => {
 	/**
 	 * 登录成功后保存 Token 和用户信息
 	 */
-	const login = (accessToken: string, userData: User) => {
-		setToken(accessToken)
-		setUser(userData)
-	}
+	const login = useCallback(
+		(accessToken: string, userData: User) => {
+			setToken(accessToken)
+			setUser(userData)
+		},
+		[setToken, setUser],
+	)
 
 	/**
 	 * 退出登录
 	 */
-	const logout = () => {
+	const logout = useCallback(() => {
 		setToken(null)
 		setUser(null)
 		localStorage.removeItem("access_token")
 		localStorage.removeItem("user")
-	}
+	}, [setToken, setUser])
 
 	/**
 	 * 获取用户信息
 	 */
-	const fetchProfile = async () => {
+	const fetchProfile = useCallback(async () => {
 		try {
 			const profile = await authApi.getProfile()
 			setUser(profile)
@@ -45,7 +49,7 @@ export const useAuth = () => {
 			logout()
 			throw error
 		}
-	}
+	}, [setUser, logout])
 
 	return {
 		token,
