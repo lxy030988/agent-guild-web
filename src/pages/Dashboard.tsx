@@ -1,7 +1,11 @@
 import { memo, useCallback, useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { type Agent, AgentStatus, agentApi } from "../utils/agent-api"
-import { dashboardApi, type DashboardStats } from "../utils/dashboard-api"
+import {
+	dashboardApi,
+	type DashboardStats,
+	type DashboardTabCounts,
+} from "../utils/dashboard-api"
 import { JobStatus, type Job, jobApi } from "../utils/job-api"
 
 
@@ -53,7 +57,7 @@ const Dashboard = () => {
 	const [signedPage, setSignedPage] = useState(1)
 	const [disputesPage, setDisputesPage] = useState(1)
 	const [stats, setStats] = useState<DashboardStats | null>(null)
-	const [tabCounts, setTabCounts] = useState({
+	const [tabCounts, setTabCounts] = useState<DashboardTabCounts>({
 		publishedJobs: 0,
 		publishedAgents: 0,
 		signedAgents: 0,
@@ -78,43 +82,43 @@ const Dashboard = () => {
 		() => [
 			{
 				title: "Published Agents",
-				value: stats?.publishedAgents ?? 0,
-				note: "近一周新增1",
+				value: stats?.publishedAgents?.value ?? 0,
+				note: stats?.publishedAgents?.note ? `近一周新增${stats?.publishedAgents?.note }` : '',
 				color: "from-blue-50 to-blue-100 border-blue-100",
 				icon: "👥",
 			},
 			{
 				title: "Active Contracts",
-				value: stats?.activeJobs ?? 0,
-				note: "",
+				value: stats?.activeJobs.value ?? 0,
+				note: stats?.activeJobs?.note ? `近一周新增${stats?.activeJobs?.note }` : '',
 				color: "from-emerald-50 to-emerald-100 border-emerald-100",
 				icon: "📄",
 			},
 			{
 				title: "Completed Jobs",
-				value: stats?.completedJobs ?? 0,
-				note: "近一周新增1",
+				value: stats?.completedJobs?.value ?? 0,
+				note: stats?.completedJobs?.note ? `近一周新增${stats?.completedJobs?.note }` : '',
 				color: "from-violet-50 to-violet-100 border-violet-100",
 				icon: "✅",
 			},
 			{
 				title: "Total Earnings",
-				value: stats?.totalEarnings ?? "$0",
-				note: "",
+				value: stats?.totalEarnings?.value  ?? "$0",
+				note: stats?.totalEarnings?.note ? `近一周新增${stats?.totalEarnings?.note }` : '',
 				color: "from-amber-50 to-amber-100 border-amber-100",
 				icon: "📈",
 			},
 			{
 				title: "In Progress Jobs",
-				value: stats?.inProgressJobs ?? 0,
-				note: "",
+				value: stats?.inProgressJobs?.value ?? 0,
+				note: stats?.inProgressJobs?.note ? `近一周新增${stats?.inProgressJobs?.note }` : '',
 				color: "from-sky-50 to-sky-100 border-sky-100",
 				icon: "🕒",
 			},
 			{
 				title: "Disputes",
-				value: stats?.disputes ?? 0,
-				note: "",
+				value: stats?.disputes.value ?? 0,
+				note: stats?.disputes?.note ? `近一周新增${stats?.disputes?.note }` : '',
 				color: "from-rose-50 to-rose-100 border-rose-100",
 				icon: "⚠️",
 			},
@@ -178,10 +182,6 @@ const Dashboard = () => {
 			const statsData = await dashboardApi.getStats()
       console.log('statsData-----', statsData)
 			setStats(statsData)
-			setTabCounts((prev) => ({
-				...prev,
-				signedAgents: statsData.activeJobs,
-			}))
 		} catch (error) {
 			console.error("Failed to load dashboard stats:", error)
 		}
@@ -189,32 +189,8 @@ const Dashboard = () => {
 
 	const loadTabCounts = useCallback(async () => {
 		try {
-			const [
-				jobsResult,
-				agentsResult,
-				signedAgentsResult,
-				disputedAgentsResult,
-			] = await Promise.all([
-				jobApi.getMyPublishedJobs({ page: 1, limit: 1 }),
-				agentApi.getAgents({ page: 1, limit: 1 }),
-				agentApi.getAgents({
-					page: 1,
-					limit: 1,
-					status: AgentStatus.MINTED,
-				}),
-				agentApi.getAgents({
-					page: 1,
-					limit: 1,
-					status: AgentStatus.PAUSED,
-				}),
-			])
-			setTabCounts((prev) => ({
-				...prev,
-				publishedJobs: jobsResult.meta.total,
-				publishedAgents: agentsResult.meta.total,
-				signedAgents: signedAgentsResult.meta.total,
-				disputedAgents: disputedAgentsResult.meta.total,
-			}))
+			const counts = await dashboardApi.getTabCounts()
+			setTabCounts(counts)
 		} catch (error) {
 			console.error("Failed to load tab counts:", error)
 		}

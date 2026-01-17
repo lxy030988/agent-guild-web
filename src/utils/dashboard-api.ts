@@ -4,12 +4,12 @@ import apiClient from "./api-client"
  * Dashboard 统计数据接口
  */
 export interface DashboardStats {
-	publishedAgents: number
-	activeJobs: number
-	completedJobs: number
-	totalEarnings: string
-	inProgressJobs: number
-	disputes: number
+	publishedAgents: { value: number; note?: string }
+	activeJobs: { value: number; note?: string }
+	completedJobs: { value: number; note?: string }
+	totalEarnings: { value: string; note?: string }
+	inProgressJobs: { value: number; note?: string }
+	disputes: { value: number; note?: string }
 }
 
 /**
@@ -51,6 +51,13 @@ export interface ActivityListResponse {
 	total: number
 	page: number
 	limit: number
+}
+
+export interface DashboardTabCounts {
+	publishedJobs: number
+	publishedAgents: number
+	signedAgents: number
+	disputedAgents: number
 }
 
 /**
@@ -96,6 +103,14 @@ export const dashboardApi = {
 		const response = await apiClient.get("/dashboard/activity", {
 			params: { page, limit },
 		})
+		return response.data.data || response.data
+	},
+
+	/**
+	 * 获取 Dashboard Tabs 统计
+	 */
+	getTabCounts: async (): Promise<DashboardTabCounts> => {
+		const response = await apiClient.get("/dashboard/loadTabCounts")
 		return response.data.data || response.data
 	},
 }
