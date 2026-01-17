@@ -24,25 +24,25 @@ export const VoteButton: React.FC<VoteButtonProps> = ({
 				return {
 					base: "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
 					active:
-						"ring-2 ring-emerald-500 bg-emerald-600 text-white hover:bg-emerald-700 border-none",
-					icon: <Check className="w-5 h-5 mr-2" />,
-					label: "Approve",
+						"ring-2 ring-emerald-500 bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-600",
+					icon: <Check className="w-4 h-4 mr-2" />,
+					label: "赞成",
 				}
 			case VoteChoice.REJECT:
 				return {
 					base: "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100",
 					active:
-						"ring-2 ring-rose-500 bg-rose-600 text-white hover:bg-rose-700 border-none",
-					icon: <X className="w-5 h-5 mr-2" />,
-					label: "Reject",
+						"ring-2 ring-rose-500 bg-rose-600 text-white hover:bg-rose-700 border-rose-600",
+					icon: <X className="w-4 h-4 mr-2" />,
+					label: "反对",
 				}
 			case VoteChoice.ABSTAIN:
 				return {
 					base: "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100",
 					active:
-						"ring-2 ring-slate-400 bg-slate-600 text-white hover:bg-slate-700 border-none",
-					icon: <Minus className="w-5 h-5 mr-2" />,
-					label: "Abstain",
+						"ring-2 ring-slate-400 bg-slate-600 text-white hover:bg-slate-700 border-slate-600",
+					icon: <Minus className="w-4 h-4 mr-2" />,
+					label: "弃权",
 				}
 		}
 	}
@@ -54,7 +54,7 @@ export const VoteButton: React.FC<VoteButtonProps> = ({
 			variant="outline"
 			onClick={() => onClick(choice)}
 			disabled={disabled || loading}
-			className={`h-16 flex-1 text-lg font-bold transition-all duration-300 rounded-2xl ${
+			className={`h-12 flex-1 text-sm font-medium transition-all duration-200 rounded-lg ${
 				selected ? style.active : style.base
 			}`}
 		>

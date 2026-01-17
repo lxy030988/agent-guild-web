@@ -1,6 +1,8 @@
 {
   // 全局默认格式化器（优先）
   "biome.enabled": true,
+  // Solidity 编译器版本
+  "solidity.compileUsingRemoteVersion": "v0.8.24+commit.e11b9ed9",
   "editor.defaultFormatter": "biomejs.biome",
   "editor.formatOnSave": true,
   "editor.formatOnType": true,

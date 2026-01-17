@@ -1,84 +1,86 @@
-import { useEffect } from "react"
-import { toast } from "sonner"
+import type { TransactionReceipt } from "viem"
+import { parseEventLogs } from "viem"
 import { useAccount, useWriteContract } from "wagmi"
 import { DISPUTE_RESOLUTION_ABI } from "../abis/DisputeResolution"
 import { getContractAddress } from "../wagmi.config"
 
-export function useDisputeContract() {
+/**
+ * Dispute 智能合约交互 Hook
+ */
+export const useDisputeContract = () => {
 	const { chainId } = useAccount()
-	const contractAddress = getContractAddress(
-		"DisputeResolution",
-		chainId!,
-	) as `0x${string}`
+	const { writeContractAsync } = useWriteContract()
 
-	const {
-		writeContract: write,
-		data: hash,
-		isPending: isConfirming,
-		isSuccess,
-		error,
-	} = useWriteContract()
-
-	// 监听成功和错误
-	useEffect(() => {
-		if (isSuccess) {
-			toast.success("Transaction submitted successfully!", {
-				description: `Hash: ${hash?.slice(0, 10)}...`,
-			})
+	const getContractConfig = () => {
+		const address = getContractAddress("DisputeResolution", chainId || 31337)
+		if (!address) {
+			throw new Error("DisputeResolution contract not deployed on this network")
 		}
-		if (error) {
-			toast.error("Transaction failed", {
-				description: error.message,
-			})
+		return {
+			address: address as `0x${string}`,
+			abi: DISPUTE_RESOLUTION_ABI,
 		}
-	}, [isSuccess, error, hash])
+	}
 
 	/**
 	 * 发起争议
 	 */
-	const createDispute = (jobId: bigint, evidenceHash: string) => {
-		if (!contractAddress) return
-		write({
-			address: contractAddress,
-			abi: DISPUTE_RESOLUTION_ABI,
+	const createDisputeOnChain = async (jobId: bigint, evidenceHash: string) => {
+		const hash = await writeContractAsync({
+			...getContractConfig(),
 			functionName: "createDispute",
 			args: [jobId, evidenceHash],
 		})
+		return { txHash: hash }
 	}
 
 	/**
 	 * 提交投票
 	 * choice: 0 = Approve, 1 = Reject, 2 = Abstain
 	 */
-	const vote = (disputeId: bigint, choice: number) => {
-		if (!contractAddress) return
-		write({
-			address: contractAddress,
-			abi: DISPUTE_RESOLUTION_ABI,
+	const voteOnChain = async (disputeId: bigint, choice: number) => {
+		const hash = await writeContractAsync({
+			...getContractConfig(),
 			functionName: "vote",
 			args: [disputeId, choice],
 		})
+		return { txHash: hash }
 	}
 
 	/**
 	 * 解决争议
 	 */
-	const resolveDispute = (disputeId: bigint) => {
-		if (!contractAddress) return
-		write({
-			address: contractAddress,
-			abi: DISPUTE_RESOLUTION_ABI,
+	const resolveDisputeOnChain = async (disputeId: bigint) => {
+		const hash = await writeContractAsync({
+			...getContractConfig(),
 			functionName: "resolveDispute",
 			args: [disputeId],
 		})
+		return { txHash: hash }
 	}
 
 	return {
-		createDispute,
-		vote,
-		resolveDispute,
-		isConfirming,
-		isSuccess,
-		hash,
+		createDisputeOnChain,
+		voteOnChain,
+		resolveDisputeOnChain,
 	}
+}
+
+/**
+ * 解析 DisputeCreated 事件获取 chainDisputeId
+ */
+export function parseDisputeCreatedEvent(
+	receipt: TransactionReceipt,
+): bigint {
+	const logs = parseEventLogs({
+		abi: DISPUTE_RESOLUTION_ABI,
+		logs: receipt.logs,
+		eventName: "DisputeCreated",
+	})
+
+	if (logs.length === 0) {
+		throw new Error("DisputeCreated event not found in transaction")
+	}
+
+	return logs[0].args.disputeId
 }

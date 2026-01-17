@@ -3,13 +3,6 @@ import type React from "react"
 import { Link } from "react-router-dom"
 import { type Dispute, DisputeStatus } from "../../utils/disputeApi"
 import { Badge } from "../ui/badge"
-import {
-	Card,
-	CardContent,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "../ui/card"
 
 interface DisputeCardProps {
 	dispute: Dispute
@@ -38,71 +31,64 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute }) => {
 
 	return (
 		<Link to={`/dao/${dispute.id}`}>
-			<Card className="hover:shadow-lg transition-all duration-300 border-gray-100 bg-white group cursor-pointer overflow-hidden relative">
-				<div
-					className={`absolute top-0 left-0 w-1 h-full ${
-						dispute.status === DisputeStatus.VOTING
-							? "bg-amber-400"
-							: dispute.status === DisputeStatus.RESOLVED
-								? "bg-emerald-400"
-								: "bg-gray-400"
-					}`}
-				/>
+			<div className="block bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all duration-200">
+				<div className="flex items-start justify-between mb-3">
+					<div className="flex-1">
+						<h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1">
+							{dispute.job?.title || "未命名争议"}
+						</h3>
+						<div className="flex items-center gap-2 flex-wrap">
+							<Badge variant="outline" className={getStatusColor(dispute.status)}>
+								{dispute.status}
+							</Badge>
+							<span className="text-xs text-gray-500">ID: #{dispute.id}</span>
+						</div>
+					</div>
+					<div className="text-right ml-4">
+						<div className="text-sm text-gray-500">投票总数</div>
+						<div className="text-xl font-bold text-blue-600">
+							{totalVotes}
+						</div>
+					</div>
+				</div>
 
-				<CardHeader className="pb-3">
-					<div className="flex justify-between items-start mb-2">
-						<Badge variant="outline" className={getStatusColor(dispute.status)}>
-							{dispute.status}
-						</Badge>
-						<span className="text-xs text-gray-400 font-medium">
-							ID: #{dispute.id}
+				<p className="text-sm text-gray-600 mb-4 line-clamp-2">
+					{dispute.reason}
+				</p>
+
+				<div className="space-y-2">
+					<div className="flex justify-between text-xs font-medium">
+						<span className="text-emerald-600">
+							赞成 {dispute.approveVotes}
 						</span>
+						<span className="text-rose-600">反对 {dispute.rejectVotes}</span>
 					</div>
-					<CardTitle className="text-lg font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
-						{dispute.job?.title || "Untitled Dispute"}
-					</CardTitle>
-					<p className="text-sm text-gray-500 line-clamp-2 mt-2 leading-relaxed">
-						{dispute.reason}
-					</p>
-				</CardHeader>
-
-				<CardContent className="pb-4">
-					<div className="space-y-3">
-						<div className="flex justify-between text-xs font-semibold mb-1">
-							<span className="text-emerald-600">
-								Approve ({dispute.approveVotes})
-							</span>
-							<span className="text-rose-600">
-								Reject ({dispute.rejectVotes})
-							</span>
-						</div>
-						<div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden flex">
-							<div
-								className="h-full bg-emerald-500"
-								style={{ width: `${approvePercent}%` }}
-							/>
-							<div
-								className="h-full bg-rose-500"
-								style={{ width: `${rejectPercent}%` }}
-							/>
-						</div>
+					<div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden flex">
+						<div
+							className="h-full bg-emerald-500"
+							style={{ width: `${approvePercent}%` }}
+						/>
+						<div
+							className="h-full bg-rose-500"
+							style={{ width: `${rejectPercent}%` }}
+						/>
 					</div>
-				</CardContent>
+				</div>
 
-				<CardFooter className="pt-0 border-t border-gray-50 flex justify-between items-center mt-2 group-hover:bg-gray-50/50 transition-colors">
-					<div className="flex items-center gap-2 mt-4">
-						<div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-[10px]">
+				<div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-4">
+					<div className="flex items-center gap-2">
+						<div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px]">
 							👤
 						</div>
-						<span className="text-xs text-gray-500">
-							By {dispute.creator?.username || "Anonymous"}
+						<span className="text-xs text-gray-600">
+							{dispute.creator?.username || "匿名用户"}
 						</span>
 					</div>
-					<span className="text-[10px] text-gray-400 font-medium mt-4">
-						{formatDistanceToNow(new Date(dispute.createdAt))} ago
-					</span>
-				</CardFooter>
-			</Card>
+					<div className="text-xs text-gray-500">
+						{formatDistanceToNow(new Date(dispute.createdAt))} 前
+					</div>
+				</div>
+			</div>
 		</Link>
 	)
 }

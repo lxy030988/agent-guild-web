@@ -4,7 +4,6 @@ import ReactMarkdown from "react-markdown"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import remarkGfm from "remark-gfm"
 import { toast } from "sonner"
-import { useWaitForTransactionReceipt } from "wagmi"
 import { readContract, waitForTransactionReceipt } from "wagmi/actions"
 import { DISPUTE_RESOLUTION_ABI } from "../abis/DisputeResolution"
 import JobStatusBadge from "../components/JobStatusBadge"
@@ -20,7 +19,10 @@ import {
 import { Textarea } from "../components/ui/textarea"
 import { useAuth } from "../hooks/useAuth"
 import { useConfirm } from "../hooks/useConfirm"
-import { useDisputeContract } from "../hooks/useDisputeContract"
+import {
+	parseDisputeCreatedEvent,
+	useDisputeContract,
+} from "../hooks/useDisputeContract"
 import { useJobContract } from "../hooks/useJobContract"
 import {
 	jobLoadingAtom,
@@ -51,8 +53,7 @@ export default function JobDetailPage() {
 
 	const { assignAgentOnChain, completeJobOnChain, cancelJobOnChain } =
 		useJobContract()
-	const { createDispute: createDisputeOnChain, hash: disputeHash } =
-		useDisputeContract()
+	const { createDisputeOnChain } = useDisputeContract()
 
 	const [job, setJob] = useAtom(selectedJobAtom)
 	const [recommendations, setRecommendations] = useAtom(jobRecommendationsAtom)
@@ -106,77 +107,6 @@ export default function JobDetailPage() {
 	useEffect(() => {
 		loadJob()
 	}, [loadJob])
-
-	// 监听争议交易成功同步后端
-	const { data: disputeReceipt } = useWaitForTransactionReceipt({
-		hash: disputeHash,
-	})
-
-	useEffect(() => {
-		if (disputeReceipt && job && showRejectModal) {
-			const syncDispute = async () => {
-				try {
-					// 从日志中解析 disputeId
-					// DisputeCreated(uint256 indexed disputeId, ...)
-					// Indexed 参数在 topics 中：[signature, disputeId, jobId, creator]
-					const disputeIdTopic = disputeReceipt.logs[0]?.topics[1]
-					const chainDisputeId = disputeIdTopic
-						? BigInt(disputeIdTopic).toString()
-						: undefined
-
-					console.log("Captured chainDisputeId:", chainDisputeId)
-
-					// 从合约读取真实的截止时间
-					let votingEndsAt: string | undefined
-					if (chainDisputeId) {
-						try {
-							const { config } = await import("../wagmi.config")
-							const disputeData = (await readContract(config, {
-								address: disputeReceipt.to as `0x${string}`,
-								abi: DISPUTE_RESOLUTION_ABI,
-								functionName: "disputes",
-								args: [BigInt(chainDisputeId)],
-							})) as any
-
-							// disputes(id) 返回元组，votingEndsAt 是第 6 个元素 (index 5)
-							// 参考合约 struct Dispute: jobId(0), creator(1), evidenceHash(2), status(3), votingStartsAt(4), votingEndsAt(5)
-							const endsAtUnix = disputeData[5]
-							if (endsAtUnix) {
-								votingEndsAt = new Date(Number(endsAtUnix) * 1000).toISOString()
-								console.log("Captured real votingEndsAt:", votingEndsAt)
-							}
-						} catch (readErr) {
-							console.warn("Failed to read votingEndsAt from chain:", readErr)
-						}
-					}
-
-					const disputeTitle = `Dispute for Job #${job.id}: ${job.title}`
-					const safeTitle =
-						disputeTitle.length >= 5
-							? disputeTitle
-							: `Dispute for Job #${job.id}`
-
-					await disputeApi.createDispute({
-						jobId: job.id,
-						title: safeTitle,
-						reason: rejectReason,
-						evidence: "ipfs://manual_reject_evidence",
-						chainDisputeId,
-						votingEndsAt,
-					})
-					toast.success("争议已发起并同步")
-					setShowRejectModal(false)
-					await loadJob()
-				} catch (error) {
-					console.error("Sync dispute error:", error)
-					toast.error("争议已上链但同步后端失败")
-				} finally {
-					setActionLoading(false)
-				}
-			}
-			syncDispute()
-		}
-	}, [disputeReceipt, job, showRejectModal, rejectReason, loadJob])
 
 	// Permission checks
 	const isOwner = job && user && job.ownerId === user.id
@@ -449,11 +379,51 @@ export default function JobDetailPage() {
 			// 如果是链上任务，发起争议
 			if (job.chainJobId) {
 				toast.info("正在调起争议合约...")
-				createDisputeOnChain(
+				const { txHash } = await createDisputeOnChain(
 					BigInt(job.chainJobId),
 					"ipfs://manual_reject_evidence",
 				)
-				// 后续同步逻辑由于 useDisputeContract 的异步性，放在上面的 useEffect 中处理
+
+				const receipt = await waitForTransactionReceipt(config, {
+					hash: txHash,
+					timeout: 60_000,
+				})
+
+				const chainDisputeId = parseDisputeCreatedEvent(receipt).toString()
+
+				let votingEndsAt: string | undefined
+				try {
+					const disputeData = (await readContract(config, {
+						address: receipt.to as `0x${string}`,
+						abi: DISPUTE_RESOLUTION_ABI,
+						functionName: "disputes",
+						args: [BigInt(chainDisputeId)],
+					})) as any
+					const endsAtUnix = disputeData[5]
+					if (endsAtUnix) {
+						votingEndsAt = new Date(Number(endsAtUnix) * 1000).toISOString()
+					}
+				} catch (readErr) {
+					console.warn("Failed to read votingEndsAt from chain:", readErr)
+				}
+
+				const disputeTitle = `Dispute for Job #${job.id}: ${job.title}`
+				const safeTitle =
+					disputeTitle.length >= 5
+						? disputeTitle
+						: `Dispute for Job #${job.id}`
+
+				await disputeApi.createDispute({
+					jobId: job.id,
+					title: safeTitle,
+					reason: rejectReason,
+					evidence: "ipfs://manual_reject_evidence",
+					chainDisputeId,
+					votingEndsAt,
+				})
+				toast.success("争议已发起并同步")
+				setShowRejectModal(false)
+				await loadJob()
 				return
 			}
 
@@ -466,9 +436,7 @@ export default function JobDetailPage() {
 			const err = error as { response?: { data?: { message?: string } } }
 			toast.error(err.response?.data?.message || "拒绝失败")
 		} finally {
-			if (!job.chainJobId) {
-				setActionLoading(false)
-			}
+			setActionLoading(false)
 		}
 	}
 
