@@ -7,6 +7,7 @@ const Home = lazy(() => import("@/pages/Home"))
 const Demo = lazy(() => import("@/pages/Demo"))
 const StorageDemo = lazy(() => import("@/pages/StorageDemo"))
 const ContractDemo = lazy(() => import("@/pages/ContractDemo"))
+const BillsPage = lazy(() => import("@/pages/BillsPage"))
 
 // Auth pages
 const ProfilePage = lazy(() => import("@/pages/ProfilePage"))
@@ -55,6 +56,14 @@ const routes: RouteObject[] = [
 				element: (
 					<Suspense fallback={<Loading />}>
 						<ProfilePage />
+					</Suspense>
+				),
+			},
+			{
+				path: "billing",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<BillsPage />
 					</Suspense>
 				),
 			},

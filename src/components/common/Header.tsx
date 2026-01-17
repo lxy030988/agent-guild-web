@@ -127,6 +127,12 @@ const Header = () => {
 						>
 							Network
 						</Link>
+						<Link
+							to="/billing"
+							className="transition-all hover:text-primary text-foreground/70 hover:scale-105"
+						>
+							Billing & History
+						</Link>
 					</nav>
 				</div>
 
