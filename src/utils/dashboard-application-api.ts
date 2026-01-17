@@ -3,7 +3,7 @@ import type { BaseResponse, PaginatedResult } from "./job-api"
 
 export interface DashboardSummary {
 	publishedAgents: { value: number; note?: string }
-	activeContracts: { value: number; note?: string }
+	activeJobs: { value: number; note?: string }
 	completedJobs: { value: number; note?: string }
 	totalEarnings: { value: string; note?: string }
 	inProgressJobs: { value: number; note?: string }

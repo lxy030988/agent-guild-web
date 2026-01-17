@@ -1,16 +1,16 @@
-import { memo, useEffect, useMemo, useState } from "react"
-import type {
-	DashboardSummary,
-	DashboardTabCounts,
-	SignedAgent,
-} from "../utils/dashboard-application-api"
-import { dashboardApplicationApi } from "../utils/dashboard-application-api"
+import { memo, useCallback, useEffect, useMemo, useState } from "react"
+import { Link } from "react-router-dom"
+import { type Agent, AgentStatus, agentApi } from "../utils/agent-api"
+import { dashboardApi, type DashboardStats } from "../utils/dashboard-api"
+import { JobStatus, type Job, jobApi } from "../utils/job-api"
+
 
 const statusStyleMap: Record<string, string> = {
 	生效中: "bg-emerald-50 text-emerald-700",
 	待生效: "bg-amber-50 text-amber-700",
 	已过期: "bg-slate-100 text-slate-500",
 	已完成: "bg-blue-50 text-blue-700",
+	争议中: "bg-rose-50 text-rose-700",
 }
 
 const defaultSignedMeta = {
@@ -19,67 +19,107 @@ const defaultSignedMeta = {
 	limit: 5,
 	totalPages: 1,
 }
+const defaultJobsMeta = defaultSignedMeta
+
+const statusLabelMap: Record<JobStatus, string> = {
+	[JobStatus.OPEN]: "待生效",
+	[JobStatus.MATCHED]: "生效中",
+	[JobStatus.IN_PROGRESS]: "生效中",
+	[JobStatus.SUBMITTED]: "生效中",
+	[JobStatus.COMPLETED]: "已完成",
+	[JobStatus.CANCELLED]: "已过期",
+	[JobStatus.DISPUTED]: "争议中",
+	[JobStatus.RESOLVED_COMPLETED]: "已完成",
+	[JobStatus.RESOLVED_CANCELLED]: "已过期",
+}
+
+const agentStatusLabelMap: Record<AgentStatus, string> = {
+	[AgentStatus.DRAFT]: "Draft",
+	[AgentStatus.ACTIVE]: "Active",
+	[AgentStatus.MINTED]: "Signed",
+	[AgentStatus.PAUSED]: "Disputed",
+	[AgentStatus.ARCHIVED]: "Archived",
+}
+
+const formatDate = (value?: string | null) => {
+	if (!value) return "--"
+	const date = new Date(value)
+	if (Number.isNaN(date.getTime())) return "--"
+	return date.toISOString().slice(0, 10)
+}
 
 const Dashboard = () => {
 	const [activeTab, setActiveTab] = useState("jobs")
 	const [signedPage, setSignedPage] = useState(1)
-	const [summary, setSummary] = useState<DashboardSummary | null>(null)
-	const [tabCounts, setTabCounts] = useState<DashboardTabCounts>({
+	const [disputesPage, setDisputesPage] = useState(1)
+	const [stats, setStats] = useState<DashboardStats | null>(null)
+	const [tabCounts, setTabCounts] = useState({
 		publishedJobs: 0,
 		publishedAgents: 0,
 		signedAgents: 0,
 		disputedAgents: 0,
 	})
-	const [signedAgents, setSignedAgents] = useState<SignedAgent[]>([])
+	const [signedAgents, setSignedAgents] = useState<Agent[]>([])
 	const [signedMeta, setSignedMeta] = useState(defaultSignedMeta)
 	const [signedLoading, setSignedLoading] = useState(false)
+	const [disputedAgents, setDisputedAgents] = useState<Agent[]>([])
+	const [disputedMeta, setDisputedMeta] = useState(defaultSignedMeta)
+	const [disputedLoading, setDisputedLoading] = useState(false)
+	const [jobsPage, setJobsPage] = useState(1)
+	const [publishedJobs, setPublishedJobs] = useState<Job[]>([])
+	const [jobsMeta, setJobsMeta] = useState(defaultJobsMeta)
+	const [jobsLoading, setJobsLoading] = useState(false)
+	const [agentsPage, setAgentsPage] = useState(1)
+	const [publishedAgents, setPublishedAgents] = useState<Agent[]>([])
+	const [agentsMeta, setAgentsMeta] = useState(defaultJobsMeta)
+	const [agentsLoading, setAgentsLoading] = useState(false)
 
 	const cards = useMemo(
 		() => [
 			{
 				title: "Published Agents",
-				value: summary?.publishedAgents?.value ?? 0,
-				note: summary?.publishedAgents?.note,
+				value: stats?.publishedAgents ?? 0,
+				note: "近一周新增1",
 				color: "from-blue-50 to-blue-100 border-blue-100",
 				icon: "👥",
 			},
 			{
 				title: "Active Contracts",
-				value: summary?.activeContracts?.value ?? 0,
-				note: summary?.activeContracts?.note,
+				value: stats?.activeJobs ?? 0,
+				note: "",
 				color: "from-emerald-50 to-emerald-100 border-emerald-100",
 				icon: "📄",
 			},
 			{
 				title: "Completed Jobs",
-				value: summary?.completedJobs?.value ?? 0,
-				note: summary?.completedJobs?.note,
+				value: stats?.completedJobs ?? 0,
+				note: "近一周新增1",
 				color: "from-violet-50 to-violet-100 border-violet-100",
 				icon: "✅",
 			},
 			{
 				title: "Total Earnings",
-				value: summary?.totalEarnings?.value ?? "$0",
-				note: summary?.totalEarnings?.note,
+				value: stats?.totalEarnings ?? "$0",
+				note: "",
 				color: "from-amber-50 to-amber-100 border-amber-100",
 				icon: "📈",
 			},
 			{
 				title: "In Progress Jobs",
-				value: summary?.inProgressJobs?.value ?? 0,
-				note: summary?.inProgressJobs?.note,
+				value: stats?.inProgressJobs ?? 0,
+				note: "",
 				color: "from-sky-50 to-sky-100 border-sky-100",
 				icon: "🕒",
 			},
 			{
 				title: "Disputes",
-				value: summary?.disputes?.value ?? 0,
-				note: summary?.disputes?.note,
+				value: stats?.disputes ?? 0,
+				note: "",
 				color: "from-rose-50 to-rose-100 border-rose-100",
 				icon: "⚠️",
 			},
 		],
-		[summary],
+		[stats],
 	)
 
 	const tabs = useMemo(
@@ -111,31 +151,89 @@ const Dashboard = () => {
 				signedMeta.total,
 			)}`
 		: "0 到 0"
+	const disputesTotalPages = disputedMeta?.totalPages || 1
+	const disputesStartLabel = disputedMeta?.total
+		? `${(disputedMeta.page - 1) * disputedMeta.limit + 1} 到 ${Math.min(
+				disputedMeta.page * disputedMeta.limit,
+				disputedMeta.total,
+			)}`
+		: "0 到 0"
+	const jobsTotalPages = jobsMeta?.totalPages || 1
+	const jobsStartLabel = jobsMeta?.total
+		? `${(jobsMeta.page - 1) * jobsMeta.limit + 1} 到 ${Math.min(
+				jobsMeta.page * jobsMeta.limit,
+				jobsMeta.total,
+			)}`
+		: "0 到 0"
+	const agentsTotalPages = agentsMeta?.totalPages || 1
+	const agentsStartLabel = agentsMeta?.total
+		? `${(agentsMeta.page - 1) * agentsMeta.limit + 1} 到 ${Math.min(
+				agentsMeta.page * agentsMeta.limit,
+				agentsMeta.total,
+			)}`
+		: "0 到 0"
+
+	const loadStats = useCallback(async () => {
+		try {
+			const statsData = await dashboardApi.getStats()
+      console.log('statsData-----', statsData)
+			setStats(statsData)
+			setTabCounts((prev) => ({
+				...prev,
+				signedAgents: statsData.activeJobs,
+			}))
+		} catch (error) {
+			console.error("Failed to load dashboard stats:", error)
+		}
+	}, [])
+
+	const loadTabCounts = useCallback(async () => {
+		try {
+			const [
+				jobsResult,
+				agentsResult,
+				signedAgentsResult,
+				disputedAgentsResult,
+			] = await Promise.all([
+				jobApi.getMyPublishedJobs({ page: 1, limit: 1 }),
+				agentApi.getAgents({ page: 1, limit: 1 }),
+				agentApi.getAgents({
+					page: 1,
+					limit: 1,
+					status: AgentStatus.MINTED,
+				}),
+				agentApi.getAgents({
+					page: 1,
+					limit: 1,
+					status: AgentStatus.PAUSED,
+				}),
+			])
+			setTabCounts((prev) => ({
+				...prev,
+				publishedJobs: jobsResult.meta.total,
+				publishedAgents: agentsResult.meta.total,
+				signedAgents: signedAgentsResult.meta.total,
+				disputedAgents: disputedAgentsResult.meta.total,
+			}))
+		} catch (error) {
+			console.error("Failed to load tab counts:", error)
+		}
+	}, [])
 
 	useEffect(() => {
-		const loadSummary = async () => {
-			try {
-				const [summaryData, tabData] = await Promise.all([
-					dashboardApplicationApi.getSummary(),
-					dashboardApplicationApi.getTabCounts(),
-				])
-				setSummary(summaryData)
-				setTabCounts(tabData)
-			} catch (error) {
-				console.error("Failed to load dashboard summary:", error)
-			}
-		}
-		loadSummary()
-	}, [])
+		loadStats()
+		loadTabCounts()
+	}, [loadStats, loadTabCounts])
 
 	useEffect(() => {
 		if (activeTab !== "signed") return
 		const loadSignedAgents = async () => {
 			try {
 				setSignedLoading(true)
-				const result = await dashboardApplicationApi.getSignedAgents({
+				const result = await agentApi.getAgents({
 					page: signedPage,
 					limit: signedMeta?.limit || defaultSignedMeta.limit,
+					status: AgentStatus.MINTED,
 				})
 				setSignedAgents(result.data)
 				setSignedMeta(result.meta || defaultSignedMeta)
@@ -148,6 +246,72 @@ const Dashboard = () => {
 		}
 		loadSignedAgents()
 	}, [activeTab, signedPage, signedMeta.limit])
+
+	useEffect(() => {
+		if (activeTab !== "disputes") return
+		const loadDisputedAgents = async () => {
+			try {
+				setDisputedLoading(true)
+				const result = await agentApi.getAgents({
+					page: disputesPage,
+					limit: disputedMeta?.limit || defaultSignedMeta.limit,
+					status: AgentStatus.PAUSED,
+				})
+				setDisputedAgents(result.data)
+				setDisputedMeta(result.meta || defaultSignedMeta)
+			} catch (error) {
+				console.error("Failed to load disputed agents:", error)
+				setDisputedMeta(defaultSignedMeta)
+			} finally {
+				setDisputedLoading(false)
+			}
+		}
+		loadDisputedAgents()
+	}, [activeTab, disputesPage, disputedMeta.limit])
+
+	const loadPublishedJobs = useCallback(async () => {
+		try {
+			setJobsLoading(true)
+			const result = await jobApi.getMyPublishedJobs({
+				page: jobsPage,
+				limit: jobsMeta?.limit || defaultJobsMeta.limit,
+			})
+			setPublishedJobs(result.data)
+			setJobsMeta(result.meta || defaultJobsMeta)
+		} catch (error) {
+			console.error("Failed to load published jobs:", error)
+			setJobsMeta(defaultJobsMeta)
+		} finally {
+			setJobsLoading(false)
+		}
+	}, [jobsPage, jobsMeta?.limit])
+
+	useEffect(() => {
+		if (activeTab !== "jobs") return
+		loadPublishedJobs()
+	}, [activeTab, loadPublishedJobs])
+
+	const loadPublishedAgents = useCallback(async () => {
+		try {
+			setAgentsLoading(true)
+			const result = await agentApi.getAgents({
+				page: agentsPage,
+				limit: agentsMeta?.limit || defaultJobsMeta.limit,
+			})
+			setPublishedAgents(result.data)
+			setAgentsMeta(result.meta || defaultJobsMeta)
+		} catch (error) {
+			console.error("Failed to load published agents:", error)
+			setAgentsMeta(defaultJobsMeta)
+		} finally {
+			setAgentsLoading(false)
+		}
+	}, [agentsPage, agentsMeta?.limit])
+
+	useEffect(() => {
+		if (activeTab !== "agents") return
+		loadPublishedAgents()
+	}, [activeTab, loadPublishedAgents])
 
 	return (
 		<div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-amber-50">
@@ -188,6 +352,15 @@ const Dashboard = () => {
 									if (tab.id === "signed") {
 										setSignedPage(1)
 									}
+									if (tab.id === "jobs") {
+										setJobsPage(1)
+									}
+									if (tab.id === "agents") {
+										setAgentsPage(1)
+									}
+									if (tab.id === "disputes") {
+										setDisputesPage(1)
+									}
 								}}
 								className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold ${
 									activeTab === tab.id
@@ -215,23 +388,135 @@ const Dashboard = () => {
 											Wallet: 0x1Be3...1b2e
 										</p>
 									</div>
-									<div className="flex items-center gap-4 text-sm text-slate-500">
-										<button
-											type="button"
-											className="rounded-lg border border-slate-200 px-3 py-2 text-slate-600 hover:bg-slate-50"
-										>
-											Refresh
-										</button>
-										<span>Total 0 jobs</span>
+										<div className="flex items-center gap-4 text-sm text-slate-500">
+											<button
+												type="button"
+												onClick={loadPublishedJobs}
+												className="rounded-lg border border-slate-200 px-3 py-2 text-slate-600 hover:bg-slate-50"
+											>
+												Refresh
+											</button>
+											<span>Total {jobsMeta.total} jobs</span>
+										</div>
+									</div>
+									<div className="mt-6 overflow-hidden rounded-2xl border border-slate-100">
+										<div className="grid grid-cols-[2fr_1fr_1fr_1fr_80px] gap-4 bg-slate-50 px-6 py-3 text-xs font-semibold text-slate-500">
+											<span>JOB 信息</span>
+											<span>状态</span>
+											<span>预算</span>
+											<span>截止时间</span>
+											<span className="text-right">操作</span>
+										</div>
+										<div className="divide-y divide-slate-100 bg-white">
+											{jobsLoading ? (
+												<div className="px-6 py-10 text-center text-sm text-slate-500">
+													加载中...
+												</div>
+											) : publishedJobs.length === 0 ? (
+												<div className="px-6 py-10 text-center text-sm text-slate-500">
+													暂无已发布任务
+												</div>
+											) : (
+												publishedJobs.map((job) => {
+													const statusLabel =
+														statusLabelMap[job.status] || "生效中"
+													return (
+														<div
+															key={job.id}
+															className="grid grid-cols-[2fr_1fr_1fr_1fr_80px] gap-4 px-6 py-5 text-sm text-slate-600"
+														>
+															<div>
+																<Link
+																	to={`/jobs/${job.id}`}
+																	className="font-semibold text-slate-900 hover:text-blue-600"
+																>
+																	{job.title}
+																</Link>
+																<p className="text-xs text-slate-400">
+																	{job.description}
+																</p>
+															</div>
+															<span
+																className={`inline-flex h-7 items-center justify-center rounded-full px-3 text-xs ${
+																	statusStyleMap[statusLabel] ||
+																	"bg-slate-100 text-slate-500"
+																}`}
+															>
+																{statusLabel}
+															</span>
+															<div>
+																<p className="text-slate-900">
+																	{job.currency}
+																	{job.budget}
+																</p>
+															</div>
+															<div>
+																<p className="text-slate-900">
+																	{formatDate(job.deadline)}
+																</p>
+															</div>
+															<div className="text-right text-slate-400">
+																<Link
+																	to={`/jobs/${job.id}`}
+																	className="hover:text-blue-600"
+																>
+																	👁️
+																</Link>
+															</div>
+														</div>
+													)
+												})
+											)}
+										</div>
+									</div>
+									<div className="mt-4 flex items-center justify-between text-sm text-slate-500">
+										<span>
+											显示 {jobsStartLabel} 条，共 {jobsMeta.total} 条记录
+										</span>
+										<div className="flex items-center gap-2">
+											<button
+												type="button"
+												onClick={() =>
+													setJobsPage((prev) => Math.max(1, prev - 1))
+												}
+												disabled={jobsPage === 1}
+												className="h-9 w-9 rounded-full border border-slate-200 text-slate-500 disabled:opacity-40"
+											>
+												‹
+											</button>
+											{Array.from({ length: jobsTotalPages }).map((_, index) => {
+												const page = index + 1
+												return (
+													<button
+														key={page}
+														type="button"
+														onClick={() => setJobsPage(page)}
+														className={`h-9 w-9 rounded-full border ${
+															jobsPage === page
+																? "border-blue-500 bg-blue-500 text-white"
+																: "border-slate-200 text-slate-500"
+														}`}
+													>
+														{page}
+													</button>
+												)
+											})}
+											<button
+												type="button"
+												onClick={() =>
+													setJobsPage((prev) =>
+														Math.min(jobsTotalPages, prev + 1),
+													)
+												}
+												disabled={jobsPage === jobsTotalPages}
+												className="h-9 w-9 rounded-full border border-slate-200 text-slate-500 disabled:opacity-40"
+											>
+												›
+											</button>
+										</div>
 									</div>
 								</div>
-								<div className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center text-slate-500">
-									<p className="text-2xl">🧳</p>
-									<p className="mt-3 font-semibold">No published jobs</p>
-									<p className="text-sm">Go publish your first job!</p>
-								</div>
-							</div>
-						) : null}
+							) : null}
 
 						{activeTab === "agents" ? (
 							<div>
@@ -247,17 +532,113 @@ const Dashboard = () => {
 									<div className="flex items-center gap-4 text-sm text-slate-500">
 										<button
 											type="button"
+											onClick={loadPublishedAgents}
 											className="rounded-lg border border-slate-200 px-3 py-2 text-slate-600 hover:bg-slate-50"
 										>
 											Refresh
 										</button>
-										<span>Total 0 agents</span>
+										<span>Total {agentsMeta.total} agents</span>
 									</div>
 								</div>
-								<div className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center text-slate-500">
-									<p className="text-2xl">👤</p>
-									<p className="mt-3 font-semibold">No published agents</p>
-									<p className="text-sm">Go publish your first agent!</p>
+								<div className="mt-6 overflow-hidden rounded-2xl border border-slate-100">
+									<div className="grid grid-cols-[2fr_1fr_1fr_1fr_80px] gap-4 bg-slate-50 px-6 py-3 text-xs font-semibold text-slate-500">
+										<span>AGENT 信息</span>
+										<span>状态</span>
+										<span>任务数</span>
+										<span>评分</span>
+										<span className="text-right">操作</span>
+									</div>
+									<div className="divide-y divide-slate-100 bg-white">
+										{agentsLoading ? (
+											<div className="px-6 py-10 text-center text-sm text-slate-500">
+												加载中...
+											</div>
+										) : publishedAgents.length === 0 ? (
+											<div className="px-6 py-10 text-center text-sm text-slate-500">
+												暂无已发布 Agent
+											</div>
+										) : (
+											publishedAgents.map((agent) => (
+												<div
+													key={agent.id}
+													className="grid grid-cols-[2fr_1fr_1fr_1fr_80px] gap-4 px-6 py-5 text-sm text-slate-600"
+												>
+													<div>
+														<p className="font-semibold text-slate-900">
+															{agent.name}
+														</p>
+														<p className="text-xs text-slate-400">
+															{agent.description}
+														</p>
+													</div>
+													<span
+														className={`inline-flex h-7 items-center justify-center rounded-full px-3 text-xs ${
+															agent.status === "ACTIVE"
+																? "bg-emerald-50 text-emerald-700"
+																: "bg-slate-100 text-slate-500"
+														}`}
+													>
+														{agent.status}
+													</span>
+													<div>
+														<p className="text-slate-900">{agent.jobCount}</p>
+													</div>
+													<div>
+														<p className="text-slate-900">
+															{agent.rating ?? "--"}
+														</p>
+													</div>
+													<div className="text-right text-slate-400">👁️</div>
+												</div>
+											))
+										)}
+									</div>
+								</div>
+								<div className="mt-4 flex items-center justify-between text-sm text-slate-500">
+									<span>
+										显示 {agentsStartLabel} 条，共 {agentsMeta.total} 条记录
+									</span>
+									<div className="flex items-center gap-2">
+										<button
+											type="button"
+											onClick={() =>
+												setAgentsPage((prev) => Math.max(1, prev - 1))
+											}
+											disabled={agentsPage === 1}
+											className="h-9 w-9 rounded-full border border-slate-200 text-slate-500 disabled:opacity-40"
+										>
+											‹
+										</button>
+										{Array.from({ length: agentsTotalPages }).map((_, index) => {
+											const page = index + 1
+											return (
+												<button
+													key={page}
+													type="button"
+													onClick={() => setAgentsPage(page)}
+													className={`h-9 w-9 rounded-full border ${
+														agentsPage === page
+															? "border-blue-500 bg-blue-500 text-white"
+															: "border-slate-200 text-slate-500"
+													}`}
+												>
+													{page}
+												</button>
+											)
+										})}
+										<button
+											type="button"
+											onClick={() =>
+												setAgentsPage((prev) =>
+													Math.min(agentsTotalPages, prev + 1),
+												)
+											}
+											disabled={agentsPage === agentsTotalPages}
+											className="h-9 w-9 rounded-full border border-slate-200 text-slate-500 disabled:opacity-40"
+										>
+											›
+										</button>
+									</div>
 								</div>
 							</div>
 						) : null}
@@ -266,45 +647,18 @@ const Dashboard = () => {
 							<div>
 								<div className="flex items-center justify-between">
 									<h3 className="text-lg font-semibold text-slate-900">
-										已签署的 Agents 合约
+										已签署的 Agents
 									</h3>
 									<span className="text-sm text-slate-500">
-										共 {signedMeta.total} 个合约
+										共 {signedMeta.total} 个 Agent
 									</span>
 								</div>
-								<div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-									<div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
-										<p className="text-sm text-emerald-700">生效合约</p>
-										<p className="text-2xl font-semibold text-emerald-900 mt-1">
-											4
-										</p>
-									</div>
-									<div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
-										<p className="text-sm text-amber-700">待生效</p>
-										<p className="text-2xl font-semibold text-amber-900 mt-1">
-											2
-										</p>
-									</div>
-									<div className="rounded-2xl border border-sky-100 bg-sky-50 p-4">
-										<p className="text-sm text-sky-700">总收益</p>
-										<p className="text-2xl font-semibold text-sky-900 mt-1">
-											¥12,450
-										</p>
-									</div>
-									<div className="rounded-2xl border border-violet-100 bg-violet-50 p-4">
-										<p className="text-sm text-violet-700">可对话</p>
-										<p className="text-2xl font-semibold text-violet-900 mt-1">
-											4
-										</p>
-									</div>
-								</div>
 								<div className="mt-6 overflow-hidden rounded-2xl border border-slate-100">
-									<div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_80px] gap-4 bg-slate-50 px-6 py-3 text-xs font-semibold text-slate-500">
+									<div className="grid grid-cols-[2fr_1fr_1fr_1fr_80px] gap-4 bg-slate-50 px-6 py-3 text-xs font-semibold text-slate-500">
 										<span>AGENT 信息</span>
-										<span>合约状态</span>
-										<span>任务进度</span>
-										<span>收益</span>
-										<span>合约期限</span>
+										<span>状态</span>
+										<span>任务数</span>
+										<span>评分</span>
 										<span className="text-right">操作</span>
 									</div>
 									<div className="divide-y divide-slate-100 bg-white">
@@ -317,80 +671,42 @@ const Dashboard = () => {
 												暂无已签署合约
 											</div>
 										) : (
-											signedAgents.map((item) => {
-												const progress =
-													item.total > 0
-														? Math.round((item.done / item.total) * 100)
-														: 0
-												return (
-													<div
-														key={`${item.id}-${item.name}`}
-														className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_80px] gap-4 px-6 py-5 text-sm text-slate-600"
-													>
-														<div>
-															<p className="font-semibold text-slate-900">
-																{item.name}
-															</p>
-															<p className="text-xs text-slate-400">
-																{item.description}
-															</p>
-															<p className="text-xs text-slate-400">
-																发布者: {item.publisher}
-															</p>
-														</div>
-														<span
-															className={`inline-flex h-7 items-center justify-center rounded-full px-3 text-xs ${
-																statusStyleMap[item.status] ||
-																"bg-slate-100 text-slate-500"
-															}`}
-														>
-															{item.status}
-														</span>
-														<div>
-															<p className="text-slate-900">
-																{item.done} / {item.total} 完成
-															</p>
-															<div className="mt-2 h-2 rounded-full bg-slate-100">
-																<div
-																	className="h-2 rounded-full bg-emerald-500"
-																	style={{ width: `${progress}%` }}
-																/>
-															</div>
-															<p className="text-xs text-slate-400 mt-1">
-																{progress}% 完成率
-															</p>
-														</div>
-														<div>
-															<p className="text-slate-900">{item.earnings}</p>
-															<p className="text-xs text-slate-400">
-																平均: {item.average}
-															</p>
-														</div>
-														<div>
-															<p className="text-slate-900">
-																{item.expireDate}
-															</p>
-															<p className="text-xs text-slate-400">
-																签署于: {item.signedAt}
-															</p>
-															<p className="text-xs text-emerald-600">
-																剩余 {item.remaining}
-															</p>
-														</div>
-														<div className="flex items-center justify-end gap-3 text-slate-400">
-															<button type="button" className="text-lg">
-																💬
-															</button>
-															<button type="button" className="text-lg">
-																👁️
-															</button>
-															<button type="button" className="text-lg">
-																⋯
-															</button>
-														</div>
+											signedAgents.map((agent) => (
+												<div
+													key={agent.id}
+													className="grid grid-cols-[2fr_1fr_1fr_1fr_80px] gap-4 px-6 py-5 text-sm text-slate-600"
+												>
+													<div>
+														<p className="font-semibold text-slate-900">
+															{agent.name}
+														</p>
+														<p className="text-xs text-slate-400">
+															{agent.description}
+														</p>
+														<p className="text-xs text-slate-400">
+															发布者: {agent.owner?.name || "--"}
+														</p>
 													</div>
-												)
-											})
+													<span
+														className={`inline-flex h-7 items-center justify-center rounded-full px-3 text-xs ${
+															agent.status === "MINTED"
+																? "bg-emerald-50 text-emerald-700"
+																: "bg-slate-100 text-slate-500"
+														}`}
+													>
+														{agentStatusLabelMap[agent.status]}
+													</span>
+													<div>
+														<p className="text-slate-900">{agent.jobCount}</p>
+													</div>
+													<div>
+														<p className="text-slate-900">
+															{agent.rating ?? "--"}
+														</p>
+													</div>
+													<div className="text-right text-slate-400">👁️</div>
+												</div>
+											))
 										)}
 									</div>
 								</div>
@@ -449,55 +765,109 @@ const Dashboard = () => {
 							<div>
 								<div className="flex items-center justify-between">
 									<h3 className="text-lg font-semibold text-slate-900">
-										Dispute Resolution Center
+										Disputed Agents
 									</h3>
 									<span className="text-sm text-slate-500">
-										Total 1 dispute case
+										共 {disputedMeta.total} 个 Agent
 									</span>
 								</div>
 								<div className="mt-6 overflow-hidden rounded-2xl border border-slate-100">
-									<div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_80px] gap-4 bg-slate-50 px-6 py-3 text-xs font-semibold text-slate-500">
-										<span>DISPUTE INFORMATION</span>
-										<span>TYPE/STATUS</span>
-										<span>AMOUNT</span>
-										<span>REPORTER</span>
-										<span>PROGRESS</span>
-										<span className="text-right">ACTIONS</span>
+									<div className="grid grid-cols-[2fr_1fr_1fr_1fr_80px] gap-4 bg-slate-50 px-6 py-3 text-xs font-semibold text-slate-500">
+										<span>AGENT 信息</span>
+										<span>状态</span>
+										<span>任务数</span>
+										<span>评分</span>
+										<span className="text-right">操作</span>
 									</div>
-									<div className="bg-white px-6 py-5 text-sm text-slate-600">
-										<div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_80px] gap-4">
-											<div>
-												<p className="font-semibold text-slate-900">
-													DataMaster AI
-												</p>
-												<p className="text-xs text-slate-400">
-													Job: AI Data Analysis Report Generation
-												</p>
+									<div className="divide-y divide-slate-100 bg-white">
+										{disputedLoading ? (
+											<div className="px-6 py-10 text-center text-sm text-slate-500">
+												加载中...
 											</div>
-											<span className="inline-flex h-7 items-center justify-center rounded-full bg-amber-50 px-3 text-xs text-amber-700">
-												Investigating
-											</span>
-											<span className="text-slate-900">$500</span>
-											<div>
-												<p className="text-slate-900">TechCorp</p>
-												<p className="text-xs text-slate-400">2025-01-01</p>
+										) : disputedAgents.length === 0 ? (
+											<div className="px-6 py-10 text-center text-sm text-slate-500">
+												暂无争议中的 Agent
 											</div>
-											<div>
-												<p className="text-blue-600">Mediator John Smith</p>
-												<div className="mt-2 h-2 rounded-full bg-slate-100">
-													<div className="h-2 w-1/2 rounded-full bg-amber-500" />
+										) : (
+											disputedAgents.map((agent) => (
+												<div
+													key={agent.id}
+													className="grid grid-cols-[2fr_1fr_1fr_1fr_80px] gap-4 px-6 py-5 text-sm text-slate-600"
+												>
+													<div>
+														<p className="font-semibold text-slate-900">
+															{agent.name}
+														</p>
+														<p className="text-xs text-slate-400">
+															{agent.description}
+														</p>
+														<p className="text-xs text-slate-400">
+															发布者: {agent.owner?.name || "--"}
+														</p>
+													</div>
+													<span className="inline-flex h-7 items-center justify-center rounded-full bg-rose-50 px-3 text-xs text-rose-700">
+														{agentStatusLabelMap[agent.status]}
+													</span>
+													<div>
+														<p className="text-slate-900">{agent.jobCount}</p>
+													</div>
+													<div>
+														<p className="text-slate-900">
+															{agent.rating ?? "--"}
+														</p>
+													</div>
+													<div className="text-right text-slate-400">👁️</div>
 												</div>
-											</div>
-											<div className="text-right text-slate-400">👁️</div>
-										</div>
-										<div className="mt-3 flex items-center gap-2 text-xs">
-											<span className="rounded-full bg-rose-50 px-2 py-1 text-rose-700">
-												Quality Issue
-											</span>
-											<span className="rounded-full bg-rose-100 px-2 py-1 text-rose-700">
-												High
-											</span>
-										</div>
+											))
+										)}
+									</div>
+								</div>
+								<div className="mt-4 flex items-center justify-between text-sm text-slate-500">
+									<span>
+										显示 {disputesStartLabel} 条，共 {disputedMeta.total} 条记录
+									</span>
+									<div className="flex items-center gap-2">
+										<button
+											type="button"
+											onClick={() =>
+												setDisputesPage((prev) => Math.max(1, prev - 1))
+											}
+											disabled={disputesPage === 1}
+											className="h-9 w-9 rounded-full border border-slate-200 text-slate-500 disabled:opacity-40"
+										>
+											‹
+										</button>
+										{Array.from({ length: disputesTotalPages }).map(
+											(_, index) => {
+												const page = index + 1
+												return (
+													<button
+														key={page}
+														type="button"
+														onClick={() => setDisputesPage(page)}
+														className={`h-9 w-9 rounded-full border ${
+															disputesPage === page
+																? "border-blue-500 bg-blue-500 text-white"
+																: "border-slate-200 text-slate-500"
+														}`}
+													>
+														{page}
+													</button>
+												)
+											},
+										)}
+										<button
+											type="button"
+											onClick={() =>
+												setDisputesPage((prev) =>
+													Math.min(disputesTotalPages, prev + 1),
+												)
+											}
+											disabled={disputesPage === disputesTotalPages}
+											className="h-9 w-9 rounded-full border border-slate-200 text-slate-500 disabled:opacity-40"
+										>
+											›
+										</button>
 									</div>
 								</div>
 							</div>

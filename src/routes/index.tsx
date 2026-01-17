@@ -10,7 +10,6 @@ const ContractDemo = lazy(() => import("@/pages/ContractDemo"))
 const ComponentDemo = lazy(() => import("@/pages/ComponentDemo"))
 const AgentList = lazy(() => import("@/pages/AgentList"))
 const AgentDetail = lazy(() => import("@/pages/AgentDetail"))
-const Dashboard = lazy(() => import("@/pages/Dashboard"))
 
 // Auth pages
 const ProfilePage = lazy(() => import("@/pages/ProfilePage"))
@@ -32,6 +31,7 @@ const BillsPage = lazy(() => import("@/pages/BillsPage"))
 
 // Dashboard page
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"))
+const Dashboard = lazy(() => import("@/pages/Dashboard"))
 
 // DAO pages
 const DAOPage = lazy(() => import("@/pages/DAOPage"))
@@ -177,6 +177,14 @@ const routes: RouteObject[] = [
 				element: (
 					<Suspense fallback={<Loading />}>
 						<DisputeDetailPage />
+					</Suspense>
+				),
+			},
+			{
+				path: "dashboard",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<Dashboard />
 					</Suspense>
 				),
 			},
