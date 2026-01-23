@@ -2,12 +2,11 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { type Agent, AgentStatus, agentApi } from "../utils/agent-api"
 import {
-	dashboardApi,
 	type DashboardStats,
 	type DashboardTabCounts,
+	dashboardApi,
 } from "../utils/dashboard-api"
-import { JobStatus, type Job, jobApi } from "../utils/job-api"
-
+import { type Job, JobStatus, jobApi } from "../utils/job-api"
 
 const statusStyleMap: Record<string, string> = {
 	生效中: "bg-emerald-50 text-emerald-700",
@@ -83,42 +82,52 @@ const Dashboard = () => {
 			{
 				title: "Published Agents",
 				value: stats?.publishedAgents?.value ?? 0,
-				note: stats?.publishedAgents?.note ? `近一周新增${stats?.publishedAgents?.note }` : '',
+				note: stats?.publishedAgents?.note
+					? `近一周新增${stats?.publishedAgents?.note}`
+					: "",
 				color: "from-blue-50 to-blue-100 border-blue-100",
 				icon: "👥",
 			},
 			{
-				title: "Active Contracts",
+				title: "Active activeJobs",
 				value: stats?.activeJobs.value ?? 0,
-				note: stats?.activeJobs?.note ? `近一周新增${stats?.activeJobs?.note }` : '',
+				note: stats?.activeJobs?.note
+					? `近一周新增${stats?.activeJobs?.note}`
+					: "",
 				color: "from-emerald-50 to-emerald-100 border-emerald-100",
 				icon: "📄",
 			},
 			{
 				title: "Completed Jobs",
 				value: stats?.completedJobs?.value ?? 0,
-				note: stats?.completedJobs?.note ? `近一周新增${stats?.completedJobs?.note }` : '',
+				note: stats?.completedJobs?.note
+					? `近一周新增${stats?.completedJobs?.note}`
+					: "",
 				color: "from-violet-50 to-violet-100 border-violet-100",
 				icon: "✅",
 			},
 			{
 				title: "Total Earnings",
-				value: stats?.totalEarnings?.value  ?? "$0",
-				note: stats?.totalEarnings?.note ? `近一周新增${stats?.totalEarnings?.note }` : '',
+				value: stats?.totalEarnings?.value ?? "$0",
+				note: stats?.totalEarnings?.note
+					? `近一周新增${stats?.totalEarnings?.note}`
+					: "",
 				color: "from-amber-50 to-amber-100 border-amber-100",
 				icon: "📈",
 			},
 			{
 				title: "In Progress Jobs",
 				value: stats?.inProgressJobs?.value ?? 0,
-				note: stats?.inProgressJobs?.note ? `近一周新增${stats?.inProgressJobs?.note }` : '',
+				note: stats?.inProgressJobs?.note
+					? `近一周新增${stats?.inProgressJobs?.note}`
+					: "",
 				color: "from-sky-50 to-sky-100 border-sky-100",
 				icon: "🕒",
 			},
 			{
 				title: "Disputes",
 				value: stats?.disputes.value ?? 0,
-				note: stats?.disputes?.note ? `近一周新增${stats?.disputes?.note }` : '',
+				note: stats?.disputes?.note ? `近一周新增${stats?.disputes?.note}` : "",
 				color: "from-rose-50 to-rose-100 border-rose-100",
 				icon: "⚠️",
 			},
@@ -164,10 +173,7 @@ const Dashboard = () => {
 		: "0 到 0"
 	const jobsTotalPages = jobsMeta?.totalPages || 1
 	const jobsStartLabel = jobsMeta?.total
-		? `${(jobsMeta.page - 1) * jobsMeta.limit + 1} 到 ${Math.min(
-				jobsMeta.page * jobsMeta.limit,
-				jobsMeta.total,
-			)}`
+		? `${(jobsMeta.page - 1) * jobsMeta.limit + 1} 到 ${Math.min(jobsMeta.page * jobsMeta.limit, jobsMeta.total)}`
 		: "0 到 0"
 	const agentsTotalPages = agentsMeta?.totalPages || 1
 	const agentsStartLabel = agentsMeta?.total
@@ -180,7 +186,7 @@ const Dashboard = () => {
 	const loadStats = useCallback(async () => {
 		try {
 			const statsData = await dashboardApi.getStats()
-      console.log('statsData-----', statsData)
+			console.log("statsData-----", statsData)
 			setStats(statsData)
 		} catch (error) {
 			console.error("Failed to load dashboard stats:", error)
@@ -206,11 +212,10 @@ const Dashboard = () => {
 		const loadSignedAgents = async () => {
 			try {
 				setSignedLoading(true)
-				const result = await agentApi.getAgents({
-					page: signedPage,
-					limit: signedMeta?.limit || defaultSignedMeta.limit,
-					status: AgentStatus.MINTED,
-				})
+				const result = await dashboardApi.getSignedAgents(
+					signedPage,
+					signedMeta?.limit || defaultSignedMeta.limit,
+				)
 				setSignedAgents(result.data)
 				setSignedMeta(result.meta || defaultSignedMeta)
 			} catch (error) {
@@ -364,135 +369,135 @@ const Dashboard = () => {
 											Wallet: 0x1Be3...1b2e
 										</p>
 									</div>
-										<div className="flex items-center gap-4 text-sm text-slate-500">
-											<button
-												type="button"
-												onClick={loadPublishedJobs}
-												className="rounded-lg border border-slate-200 px-3 py-2 text-slate-600 hover:bg-slate-50"
-											>
-												Refresh
-											</button>
-											<span>Total {jobsMeta.total} jobs</span>
-										</div>
-									</div>
-									<div className="mt-6 overflow-hidden rounded-2xl border border-slate-100">
-										<div className="grid grid-cols-[2fr_1fr_1fr_1fr_80px] gap-4 bg-slate-50 px-6 py-3 text-xs font-semibold text-slate-500">
-											<span>JOB 信息</span>
-											<span>状态</span>
-											<span>预算</span>
-											<span>截止时间</span>
-											<span className="text-right">操作</span>
-										</div>
-										<div className="divide-y divide-slate-100 bg-white">
-											{jobsLoading ? (
-												<div className="px-6 py-10 text-center text-sm text-slate-500">
-													加载中...
-												</div>
-											) : publishedJobs.length === 0 ? (
-												<div className="px-6 py-10 text-center text-sm text-slate-500">
-													暂无已发布任务
-												</div>
-											) : (
-												publishedJobs.map((job) => {
-													const statusLabel =
-														statusLabelMap[job.status] || "生效中"
-													return (
-														<div
-															key={job.id}
-															className="grid grid-cols-[2fr_1fr_1fr_1fr_80px] gap-4 px-6 py-5 text-sm text-slate-600"
-														>
-															<div>
-																<Link
-																	to={`/jobs/${job.id}`}
-																	className="font-semibold text-slate-900 hover:text-blue-600"
-																>
-																	{job.title}
-																</Link>
-																<p className="text-xs text-slate-400">
-																	{job.description}
-																</p>
-															</div>
-															<span
-																className={`inline-flex h-7 items-center justify-center rounded-full px-3 text-xs ${
-																	statusStyleMap[statusLabel] ||
-																	"bg-slate-100 text-slate-500"
-																}`}
-															>
-																{statusLabel}
-															</span>
-															<div>
-																<p className="text-slate-900">
-																	{job.currency}
-																	{job.budget}
-																</p>
-															</div>
-															<div>
-																<p className="text-slate-900">
-																	{formatDate(job.deadline)}
-																</p>
-															</div>
-															<div className="text-right text-slate-400">
-																<Link
-																	to={`/jobs/${job.id}`}
-																	className="hover:text-blue-600"
-																>
-																	👁️
-																</Link>
-															</div>
-														</div>
-													)
-												})
-											)}
-										</div>
-									</div>
-									<div className="mt-4 flex items-center justify-between text-sm text-slate-500">
-										<span>
-											显示 {jobsStartLabel} 条，共 {jobsMeta.total} 条记录
-										</span>
-										<div className="flex items-center gap-2">
-											<button
-												type="button"
-												onClick={() =>
-													setJobsPage((prev) => Math.max(1, prev - 1))
-												}
-												disabled={jobsPage === 1}
-												className="h-9 w-9 rounded-full border border-slate-200 text-slate-500 disabled:opacity-40"
-											>
-												‹
-											</button>
-											{Array.from({ length: jobsTotalPages }).map((_, index) => {
-												const page = index + 1
-												return (
-													<button
-														key={page}
-														type="button"
-														onClick={() => setJobsPage(page)}
-														className={`h-9 w-9 rounded-full border ${
-															jobsPage === page
-																? "border-blue-500 bg-blue-500 text-white"
-																: "border-slate-200 text-slate-500"
-														}`}
-													>
-														{page}
-													</button>
-												)
-											})}
-											<button
-												type="button"
-												onClick={() =>
-													setJobsPage((prev) =>
-														Math.min(jobsTotalPages, prev + 1),
-													)
-												}
-												disabled={jobsPage === jobsTotalPages}
-												className="h-9 w-9 rounded-full border border-slate-200 text-slate-500 disabled:opacity-40"
-											>
-												›
-											</button>
-										</div>
+									<div className="flex items-center gap-4 text-sm text-slate-500">
+										<button
+											type="button"
+											onClick={loadPublishedJobs}
+											className="rounded-lg border border-slate-200 px-3 py-2 text-slate-600 hover:bg-slate-50"
+										>
+											Refresh
+										</button>
+										<span>Total {jobsMeta.total} jobs</span>
 									</div>
 								</div>
-							) : null}
+								<div className="mt-6 overflow-hidden rounded-2xl border border-slate-100">
+									<div className="grid grid-cols-[2fr_1fr_1fr_1fr_80px] gap-4 bg-slate-50 px-6 py-3 text-xs font-semibold text-slate-500">
+										<span>JOB 信息</span>
+										<span>状态</span>
+										<span>预算</span>
+										<span>截止时间</span>
+										<span className="text-right">操作</span>
+									</div>
+									<div className="divide-y divide-slate-100 bg-white">
+										{jobsLoading ? (
+											<div className="px-6 py-10 text-center text-sm text-slate-500">
+												加载中...
+											</div>
+										) : publishedJobs.length === 0 ? (
+											<div className="px-6 py-10 text-center text-sm text-slate-500">
+												暂无已发布任务
+											</div>
+										) : (
+											publishedJobs.map((job) => {
+												const statusLabel =
+													statusLabelMap[job.status] || "生效中"
+												return (
+													<div
+														key={job.id}
+														className="grid grid-cols-[2fr_1fr_1fr_1fr_80px] gap-4 px-6 py-5 text-sm text-slate-600"
+													>
+														<div>
+															<Link
+																to={`/jobs/${job.id}`}
+																className="font-semibold text-slate-900 hover:text-blue-600"
+															>
+																{job.title}
+															</Link>
+															<p className="text-xs text-slate-400">
+																{job.description}
+															</p>
+														</div>
+														<span
+															className={`inline-flex h-7 items-center justify-center rounded-full px-3 text-xs ${
+																statusStyleMap[statusLabel] ||
+																"bg-slate-100 text-slate-500"
+															}`}
+														>
+															{statusLabel}
+														</span>
+														<div>
+															<p className="text-slate-900">
+																{job.currency}
+																{job.budget}
+															</p>
+														</div>
+														<div>
+															<p className="text-slate-900">
+																{formatDate(job.deadline)}
+															</p>
+														</div>
+														<div className="text-right text-slate-400">
+															<Link
+																to={`/jobs/${job.id}`}
+																className="hover:text-blue-600"
+															>
+																👁️
+															</Link>
+														</div>
+													</div>
+												)
+											})
+										)}
+									</div>
+								</div>
+								<div className="mt-4 flex items-center justify-between text-sm text-slate-500">
+									<span>
+										显示 {jobsStartLabel} 条，共 {jobsMeta.total} 条记录
+									</span>
+									<div className="flex items-center gap-2">
+										<button
+											type="button"
+											onClick={() =>
+												setJobsPage((prev) => Math.max(1, prev - 1))
+											}
+											disabled={jobsPage === 1}
+											className="h-9 w-9 rounded-full border border-slate-200 text-slate-500 disabled:opacity-40"
+										>
+											‹
+										</button>
+										{Array.from({ length: jobsTotalPages }).map((_, index) => {
+											const page = index + 1
+											return (
+												<button
+													key={page}
+													type="button"
+													onClick={() => setJobsPage(page)}
+													className={`h-9 w-9 rounded-full border ${
+														jobsPage === page
+															? "border-blue-500 bg-blue-500 text-white"
+															: "border-slate-200 text-slate-500"
+													}`}
+												>
+													{page}
+												</button>
+											)
+										})}
+										<button
+											type="button"
+											onClick={() =>
+												setJobsPage((prev) =>
+													Math.min(jobsTotalPages, prev + 1),
+												)
+											}
+											disabled={jobsPage === jobsTotalPages}
+											className="h-9 w-9 rounded-full border border-slate-200 text-slate-500 disabled:opacity-40"
+										>
+											›
+										</button>
+									</div>
+								</div>
+							</div>
+						) : null}
 
 						{activeTab === "agents" ? (
 							<div>
@@ -585,23 +590,25 @@ const Dashboard = () => {
 										>
 											‹
 										</button>
-										{Array.from({ length: agentsTotalPages }).map((_, index) => {
-											const page = index + 1
-											return (
-												<button
-													key={page}
-													type="button"
-													onClick={() => setAgentsPage(page)}
-													className={`h-9 w-9 rounded-full border ${
-														agentsPage === page
-															? "border-blue-500 bg-blue-500 text-white"
-															: "border-slate-200 text-slate-500"
-													}`}
-												>
-													{page}
-												</button>
-											)
-										})}
+										{Array.from({ length: agentsTotalPages }).map(
+											(_, index) => {
+												const page = index + 1
+												return (
+													<button
+														key={page}
+														type="button"
+														onClick={() => setAgentsPage(page)}
+														className={`h-9 w-9 rounded-full border ${
+															agentsPage === page
+																? "border-blue-500 bg-blue-500 text-white"
+																: "border-slate-200 text-slate-500"
+														}`}
+													>
+														{page}
+													</button>
+												)
+											},
+										)}
 										<button
 											type="button"
 											onClick={() =>

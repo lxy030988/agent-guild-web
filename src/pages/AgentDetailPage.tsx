@@ -1,14 +1,23 @@
 import { useAtom, useAtomValue } from "jotai"
 import type React from "react"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { toast } from "sonner"
 import { Button } from "../components/ui/button"
 import { Card } from "../components/ui/card"
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "../components/ui/dialog"
 import { useConfirm } from "../hooks/useConfirm"
 import { agentDetailLoadingAtom, selectedAgentAtom } from "../store/agentAtoms"
 import { userAtom } from "../stores/authStore"
-import { AgentCategory, agentApi } from "../utils/agent-api"
+import { AgentCategory, AgentStatus, agentApi } from "../utils/agent-api"
+import { JobStatus, jobApi } from "../utils/job-api"
 
 /**
  * 分类标签颜色映射
@@ -18,6 +27,18 @@ const categoryColors: Record<AgentCategory, string> = {
 	[AgentCategory.CREATIVE_ASSISTANTS]: "bg-purple-100 text-purple-800",
 	[AgentCategory.DEVELOPER_TOOLS]: "bg-green-100 text-green-800",
 	[AgentCategory.OTHERS]: "bg-gray-100 text-gray-800",
+}
+
+const jobStatusLabels: Record<JobStatus, string> = {
+	[JobStatus.OPEN]: "开放中",
+	[JobStatus.MATCHED]: "已匹配",
+	[JobStatus.IN_PROGRESS]: "进行中",
+	[JobStatus.SUBMITTED]: "已提交",
+	[JobStatus.COMPLETED]: "已完成",
+	[JobStatus.CANCELLED]: "已取消",
+	[JobStatus.DISPUTED]: "争议中",
+	[JobStatus.RESOLVED_COMPLETED]: "已完成",
+	[JobStatus.RESOLVED_CANCELLED]: "已取消",
 }
 
 /**
@@ -30,6 +51,20 @@ export const AgentDetailPage: React.FC = () => {
 	const [loading, setLoading] = useAtom(agentDetailLoadingAtom)
 	const user = useAtomValue(userAtom)
 	const [deleting, setDeleting] = useState(false)
+	const [assignDialogOpen, setAssignDialogOpen] = useState(false)
+	const [jobsLoading, setJobsLoading] = useState(false)
+	const [jobsPage, setJobsPage] = useState(1)
+	const [jobsMeta, setJobsMeta] = useState({
+		total: 0,
+		page: 1,
+		limit: 6,
+		totalPages: 1,
+	})
+	const [jobs, setJobs] = useState<
+		Awaited<ReturnType<typeof jobApi.getMyPublishedJobs>>["data"]
+	>([])
+	const [selectedJobId, setSelectedJobId] = useState<number | null>(null)
+	const [assigning, setAssigning] = useState(false)
 	const { confirm, ConfirmDialog } = useConfirm()
 
 	const isOwner = user && agent && user.id === agent.ownerId
@@ -90,6 +125,81 @@ export const AgentDetailPage: React.FC = () => {
 
 		loadAgent()
 	}, [id, setAgent, setLoading])
+
+	const loadPublishedJobs = useCallback(
+		async (page: number) => {
+			try {
+				setJobsLoading(true)
+				const result = await jobApi.getMyPublishedJobs({
+					page,
+					limit: jobsMeta.limit,
+				})
+				setJobs(result.data)
+				setJobsMeta(result.meta)
+			} catch (error) {
+				console.error("Failed to load jobs:", error)
+				toast.error("加载任务失败，请稍后重试")
+			} finally {
+				setJobsLoading(false)
+			}
+		},
+		[jobsMeta.limit],
+	)
+
+	useEffect(() => {
+		if (!assignDialogOpen) return
+		setSelectedJobId(null)
+		setJobsPage(1)
+		loadPublishedJobs(1)
+	}, [assignDialogOpen, loadPublishedJobs])
+
+	useEffect(() => {
+		if (!assignDialogOpen) return
+		loadPublishedJobs(jobsPage)
+	}, [assignDialogOpen, jobsPage, loadPublishedJobs])
+
+	const handleAssignJob = async () => {
+		if (!agent) return
+		if (!selectedJobId) {
+			toast.error("请选择一个任务")
+			return
+		}
+		try {
+			setAssigning(true)
+			const selectedJob = jobs.find((job) => job.id === selectedJobId)
+			if (!selectedJob) {
+				toast.error("找不到选中的任务")
+				return
+			}
+
+			// 先确保后端写入关联关系
+			await jobApi.assignAgent(selectedJobId, agent.id)
+			await jobApi.updateJob(selectedJobId, {
+				assignedAgentId: agent.id,
+				status: JobStatus.MATCHED,
+			})
+			await jobApi.startJob(selectedJobId)
+			console.log("updated--------1", agent.status)
+			if (isOwner) {
+				try {
+					const updated = await agentApi.updateAgent(agent.id, {
+						isActive: true,
+					})
+					console.log("updated--------", updated)
+					setAgent(updated)
+				} catch (error) {
+					console.warn("Failed to update agent status:", error)
+				}
+			}
+			toast.success("Agent 已开始执行任务")
+			setAssignDialogOpen(false)
+		} catch (error) {
+			console.error("Failed to assign job:", error)
+			toast.error("任务分配失败，请稍后重试")
+		} finally {
+			setAssigning(false)
+		}
+	}
 
 	if (loading) {
 		return (
@@ -388,7 +498,11 @@ export const AgentDetailPage: React.FC = () => {
 
 							{/* CTA 按钮 */}
 							<div className="mt-6 pt-6 border-t">
-								<Button type="button" className="w-full">
+								<Button
+									type="button"
+									className="w-full"
+									onClick={() => setAssignDialogOpen(true)}
+								>
 									Use This Agent
 								</Button>
 							</div>
@@ -396,6 +510,111 @@ export const AgentDetailPage: React.FC = () => {
 					</div>
 				</div>
 			</div>
+
+			<Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
+				<DialogContent className="max-w-2xl">
+					<DialogHeader>
+						<DialogTitle>选择任务</DialogTitle>
+						<DialogDescription>
+							选择一个你发布的任务，让该 Agent 开始执行
+						</DialogDescription>
+					</DialogHeader>
+
+					<div className="mt-4 space-y-3">
+						{jobsLoading ? (
+							<div className="py-8 text-center text-sm text-gray-500">
+								加载中...
+							</div>
+						) : jobs.length === 0 ? (
+							<div className="py-8 text-center text-sm text-gray-500">
+								暂无可用任务
+							</div>
+						) : (
+							jobs.map((job) => {
+								const disabled = job.status !== JobStatus.OPEN
+								return (
+									<label
+										key={job.id}
+										className={`flex items-start justify-between gap-4 rounded-lg border px-4 py-3 ${
+											disabled
+												? "border-gray-200 bg-gray-50 text-gray-400"
+												: "border-gray-200 hover:border-blue-200"
+										}`}
+									>
+										<div className="flex items-start gap-3">
+											<input
+												type="radio"
+												name="job"
+												className="mt-1"
+												disabled={disabled}
+												checked={selectedJobId === job.id}
+												onChange={() => setSelectedJobId(job.id)}
+											/>
+											<div>
+												<p className="font-medium text-gray-900">{job.title}</p>
+												<p className="text-xs text-gray-500 line-clamp-2">
+													{job.description}
+												</p>
+											</div>
+										</div>
+										<div className="text-right text-xs text-gray-500">
+											<p>{jobStatusLabels[job.status]}</p>
+											<p>
+												{job.currency}
+												{job.budget}
+											</p>
+										</div>
+									</label>
+								)
+							})
+						)}
+					</div>
+
+					<div className="mt-4 flex items-center justify-between text-sm text-gray-500">
+						<span>
+							第 {jobsMeta.page} / {jobsMeta.totalPages} 页，共 {jobsMeta.total}{" "}
+							条
+						</span>
+						<div className="flex items-center gap-2">
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => setJobsPage((prev) => Math.max(1, prev - 1))}
+								disabled={jobsMeta.page <= 1}
+							>
+								上一页
+							</Button>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() =>
+									setJobsPage((prev) => Math.min(jobsMeta.totalPages, prev + 1))
+								}
+								disabled={jobsMeta.page >= jobsMeta.totalPages}
+							>
+								下一页
+							</Button>
+						</div>
+					</div>
+
+					<DialogFooter>
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => setAssignDialogOpen(false)}
+						>
+							取消
+						</Button>
+						<Button
+							type="button"
+							onClick={handleAssignJob}
+							disabled={assigning || !selectedJobId}
+						>
+							{assigning ? "处理中..." : "确认执行"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 
 			<ConfirmDialog />
 		</div>

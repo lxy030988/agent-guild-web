@@ -92,6 +92,7 @@ export default function JobDetailPage() {
 		try {
 			setLoading(true)
 			const jobData = await jobApi.getJob(Number(id))
+			console.log("jobData----", jobData)
 			setJob(jobData)
 
 			// Only load recommendations for non-SMART modes

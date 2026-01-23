@@ -1,4 +1,5 @@
 import apiClient from "./api-client"
+import type { Agent } from "./agent-api"
 
 /**
  * Dashboard 统计数据接口
@@ -60,6 +61,16 @@ export interface DashboardTabCounts {
 	disputedAgents: number
 }
 
+export interface PaginatedResult<T> {
+	data: T[]
+	meta: {
+		total: number
+		page: number
+		limit: number
+		totalPages: number
+	}
+}
+
 /**
  * Dashboard API 客户端
  */
@@ -111,6 +122,16 @@ export const dashboardApi = {
 	 */
 	getTabCounts: async (): Promise<DashboardTabCounts> => {
 		const response = await apiClient.get("/dashboard/loadTabCounts")
+		return response.data.data || response.data
+	},
+
+	getSignedAgents: async (
+		page: number = 1,
+		limit: number = 20,
+	): Promise<PaginatedResult<Agent>> => {
+		const response = await apiClient.get("/dashboard/signed-agents", {
+			params: { page, limit },
+		})
 		return response.data.data || response.data
 	},
 }

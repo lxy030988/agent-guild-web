@@ -23,7 +23,7 @@ import {
 	searchKeywordAtom,
 	selectedCategoryAtom,
 } from "../store/agentAtoms"
-import { AgentCategory, agentApi } from "../utils/agent-api"
+import { type AgentCategory, agentApi } from "../utils/agent-api"
 
 /**
  * Agent 列表页面
@@ -37,7 +37,7 @@ export const AgentsPage: React.FC = () => {
 	const [selectedCategory, setSelectedCategory] = useAtom(selectedCategoryAtom)
 	const [searchKeyword, setSearchKeyword] = useAtom(searchKeywordAtom)
 	const [allTags, setAllTags] = useAtom(allTagsAtom)
-	const [categoryStats, setCategoryStats] = useAtom(categoryStatsAtom)
+	const [categoryStats, setCategoryStats] = useState([])
 
 	const [selectedTags, setSelectedTags] = useState<string[]>([])
 
@@ -56,7 +56,7 @@ export const AgentsPage: React.FC = () => {
 
 			const response = await agentApi.getAgents(params)
 			setAgents(response.data)
-			setTotal(response.meta.total)
+			setTotal(response.total)
 		} catch (error) {
 			console.error("Failed to load agents:", error)
 		} finally {
@@ -78,6 +78,7 @@ export const AgentsPage: React.FC = () => {
 	const loadTags = useCallback(async () => {
 		try {
 			const response = await agentApi.getAllTags()
+      console.log('setAllTags', response)
 			setAllTags(response.tags)
 		} catch (error) {
 			console.error("Failed to load tags:", error)
@@ -90,11 +91,12 @@ export const AgentsPage: React.FC = () => {
 	const loadCategoryStats = useCallback(async () => {
 		try {
 			const stats = await agentApi.getCategoryStats()
+      console.log('stats----', stats)
 			setCategoryStats(stats)
 		} catch (error) {
 			console.error("Failed to load category stats:", error)
 		}
-	}, [setCategoryStats])
+	}, [])
 
 	/**
 	 * 初始加载
@@ -206,18 +208,18 @@ export const AgentsPage: React.FC = () => {
 									>
 										All ({total})
 									</Button>
-									{Object.values(AgentCategory).map((category) => (
+									{categoryStats.map((category) => (
 										<Button
 											type="button"
-											key={category}
+											key={category?.category}
 											variant={
 												selectedCategory === category ? "secondary" : "ghost"
 											}
-											onClick={() => handleCategoryFilter(category)}
+											onClick={() => handleCategoryFilter(category?.category)}
 											className="w-full justify-start"
 										>
-											{category.replace(/_/g, " ")} (
-											{categoryStats[category] || 0})
+											{ category?.category} (
+											{ category?.count|| 0})
 										</Button>
 									))}
 								</div>
