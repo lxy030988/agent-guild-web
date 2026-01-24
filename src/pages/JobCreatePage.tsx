@@ -148,9 +148,14 @@ export default function JobCreatePage() {
 			toast.info("正在发起链上交易...")
 
 			const deadlineTimestamp = Math.floor(new Date(deadline).getTime() / 1000)
+			const nowTimestamp = Math.floor(Date.now() / 1000)
 
-			if (!formData.budget) {
-				throw new Error("预算不能为空")
+			if (deadlineTimestamp <= nowTimestamp) {
+				throw new Error("截止时间必须是未来时间")
+			}
+
+			if (!formData.budget || Number(formData.budget) <= 1) {
+				throw new Error("预算必须大于 1")
 			}
 
 			const { txHash: hash } = await createJobOnChain(

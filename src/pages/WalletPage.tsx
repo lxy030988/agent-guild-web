@@ -20,6 +20,19 @@ import {
 	waitForTransactionReceipt,
 	writeContract,
 } from "wagmi/actions"
+import {
+	ArrowDownLeft,
+	ArrowUpRight,
+	Briefcase,
+	Coins,
+	CreditCard,
+	History,
+	Lock,
+	PiggyBank,
+	Star,
+	TrendingUp,
+	Wallet,
+} from "lucide-react"
 import { WALLET_ABI } from "../abis/Wallet"
 import { Button } from "../components/ui/button"
 import {
@@ -144,7 +157,7 @@ export default function WalletPage() {
 
 	// 准备饼图数据
 	const getPieChartData = () => {
-		return [
+		const data = [
 			{
 				name: "Agent 收益",
 				value: parseFloat(agentEarnings),
@@ -152,7 +165,17 @@ export default function WalletPage() {
 			},
 			{ name: "Job 托管", value: parseFloat(jobEscrow), color: "#8b5cf6" },
 			{ name: "质押奖励", value: parseFloat(stakingRewards), color: "#10b981" },
-		].filter((item) => item.value > 0)
+		]
+		// 只要有值就显示，哪怕很小
+		return data.filter((item) => item.value > 0)
+	}
+
+	// 格式化显示金额
+	const formatDisplayBalance = (amount: string) => {
+		const val = parseFloat(amount)
+		if (val === 0) return "0"
+		if (val < 0.000001) return "< 0.000001"
+		return val.toLocaleString("en-US", { maximumFractionDigits: 6 })
 	}
 
 	// 准备趋势图数据
@@ -314,16 +337,16 @@ export default function WalletPage() {
 		}
 	}
 
-	// 交易类型标签颜色
-	const getTransactionTypeColor = (type: string) => {
-		const colors: Record<string, string> = {
-			JOB_PAYMENT: "bg-green-100 text-green-800",
-			PLATFORM_FEE: "bg-yellow-100 text-yellow-800",
-			REFUND: "bg-blue-100 text-blue-800",
-			STAKING_REWARD: "bg-purple-100 text-purple-800",
-			WITHDRAWAL: "bg-gray-100 text-gray-800",
+	// 交易类型配置
+	const getTransactionConfig = (type: string) => {
+		const config: Record<string, { color: string, icon: any }> = {
+			JOB_PAYMENT: { color: "text-green-600 bg-green-100", icon: Briefcase },
+			PLATFORM_FEE: { color: "text-orange-600 bg-orange-100", icon: CreditCard },
+			REFUND: { color: "text-blue-600 bg-blue-100", icon: ArrowDownLeft },
+			STAKING_REWARD: { color: "text-purple-600 bg-purple-100", icon: Coins },
+			WITHDRAWAL: { color: "text-gray-600 bg-gray-100", icon: ArrowUpRight },
 		}
-		return colors[type] || "bg-gray-100 text-gray-800"
+		return config[type] || { color: "text-gray-600 bg-gray-100", icon: History }
 	}
 
 	// 交易类型中文名
@@ -350,80 +373,142 @@ export default function WalletPage() {
 		<div className="min-h-screen bg-gray-50 pt-20 pb-12">
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 				{/* Header */}
-				<div className="mb-8">
-					<h1 className="text-3xl font-bold text-gray-900">我的钱包</h1>
-					<p className="mt-2 text-gray-600">管理您的资产和交易记录</p>
+				<div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+					<div>
+						<h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+							<Wallet className="w-8 h-8 text-blue-600" />
+							我的钱包
+						</h1>
+						<p className="mt-2 text-gray-600">
+							管理您的资产、收益和交易记录
+						</p>
+					</div>
+					<div className="flex gap-3">
+						<Button onClick={() => loadAllData()} variant="outline" size="sm">
+							<History className="w-4 h-4 mr-2" />
+							刷新数据
+						</Button>
+					</div>
 				</div>
 
 				{/* 资产概览卡片 */}
 				{overview && (
-					<div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-						<Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-							<CardHeader>
-								<CardDescription className="text-blue-100">
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+						<Card className="bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-lg border-0">
+							<CardHeader className="pb-2">
+								<CardDescription className="text-blue-100 flex items-center gap-2">
+									<Coins className="w-4 h-4" />
 									总收益
 								</CardDescription>
-								<CardTitle className="text-3xl">
-									{overview.totalEarnings} ETH
+								<CardTitle className="text-3xl font-bold tracking-tight">
+									{overview.totalEarnings} <span className="text-lg font-normal opacity-80">ETH</span>
 								</CardTitle>
 							</CardHeader>
+							<CardContent>
+								<div className="text-sm text-blue-100 opacity-80">
+									累计获得的所有收益
+								</div>
+							</CardContent>
 						</Card>
-						<Card>
-							<CardHeader>
-								<CardDescription>待结算</CardDescription>
-								<CardTitle className="text-2xl">
-									{overview.pendingEarnings} ETH
+
+						<Card className="shadow-md hover:shadow-lg transition-shadow border-blue-100">
+							<CardHeader className="pb-2">
+								<CardDescription className="flex items-center gap-2 text-gray-500">
+									<History className="w-4 h-4" />
+									待结算
+								</CardDescription>
+								<CardTitle className="text-2xl font-bold text-gray-900">
+									{overview.pendingEarnings} <span className="text-sm font-normal text-gray-500">ETH</span>
 								</CardTitle>
 							</CardHeader>
+							<CardContent>
+								<div className="text-sm text-gray-500">
+									预计即将到账的收益
+								</div>
+							</CardContent>
 						</Card>
-						<Card>
-							<CardHeader>
-								<CardDescription>完成任务</CardDescription>
-								<CardTitle className="text-2xl">{overview.totalJobs}</CardTitle>
+
+						<Card className="shadow-md hover:shadow-lg transition-shadow border-purple-100">
+							<CardHeader className="pb-2">
+								<CardDescription className="flex items-center gap-2 text-gray-500">
+									<Briefcase className="w-4 h-4" />
+									完成任务
+								</CardDescription>
+								<CardTitle className="text-2xl font-bold text-gray-900">
+									{overview.totalJobs} <span className="text-sm font-normal text-gray-500">个</span>
+								</CardTitle>
 							</CardHeader>
+							<CardContent>
+								<div className="text-sm text-gray-500">
+									累计完成的任务数量
+								</div>
+							</CardContent>
 						</Card>
-						<Card>
-							<CardHeader>
-								<CardDescription>平均评分</CardDescription>
-								<CardTitle className="text-2xl flex items-center gap-2">
+
+						<Card className="shadow-md hover:shadow-lg transition-shadow border-yellow-100">
+							<CardHeader className="pb-2">
+								<CardDescription className="flex items-center gap-2 text-gray-500">
+									<Star className="w-4 h-4" />
+									平均评分
+								</CardDescription>
+								<CardTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
 									{overview.averageRating}
-									<span className="text-yellow-500">⭐</span>
+									<div className="flex text-yellow-400 text-lg">
+										{"★".repeat(Math.round(parseFloat(overview.averageRating)))}
+										<span className="text-gray-200">
+											{"★".repeat(5 - Math.round(parseFloat(overview.averageRating)))}
+										</span>
+									</div>
 								</CardTitle>
 							</CardHeader>
+							<CardContent>
+								<div className="text-sm text-gray-500">
+									基于历史任务的平均评分
+								</div>
+							</CardContent>
 						</Card>
 					</div>
 				)}
 
 				{/* 三个钱包卡片 */}
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
 					{/* Agent 收益钱包 - 从链上读取 */}
-					<Card className="border-2 border-blue-200 hover:border-blue-400 transition-colors">
+					<Card className="border border-blue-100 shadow-md hover:shadow-xl transition-all duration-300 relative overflow-hidden group">
+						<div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+							<CreditCard className="w-24 h-24 text-blue-600 transform rotate-12" />
+						</div>
 						<CardHeader>
-							<div className="flex items-center justify-between">
-								<div className="flex items-center gap-2">
-									<div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-										<span className="text-2xl">💰</span>
+							<div className="flex items-center justify-between relative z-10">
+								<div className="flex items-center gap-3">
+									<div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center border border-blue-100">
+										<CreditCard className="w-6 h-6 text-blue-600" />
 									</div>
 									<div>
-										<CardTitle className="text-lg">Agent 收益</CardTitle>
+										<CardTitle className="text-lg font-semibold">Agent 收益</CardTitle>
 										<CardDescription>链上余额</CardDescription>
 									</div>
 								</div>
 							</div>
 						</CardHeader>
-						<CardContent>
-							<div className="space-y-4">
+						<CardContent className="relative z-10">
+							<div className="space-y-6">
 								<div>
-									<p className="text-3xl font-bold text-gray-900">
-										{agentEarnings}{" "}
-										<span className="text-xl text-gray-500">ETH</span>
+									<div title={`${agentEarnings} ETH`}>
+										<p className="text-4xl font-bold text-gray-900 tracking-tight">
+											{formatDisplayBalance(agentEarnings)}{" "}
+											<span className="text-xl font-medium text-gray-500">ETH</span>
+										</p>
+									</div>
+									<p className="text-sm text-gray-500 mt-1">
+										任务完成后的直接收益
 									</p>
 								</div>
 								<Button
-									className="w-full bg-blue-600 hover:bg-blue-700"
+									className="w-full bg-blue-600 hover:bg-blue-700 shadow-blue-200 shadow-lg"
 									onClick={() => handleWithdraw("earnings")}
 									disabled={parseFloat(agentEarnings) === 0}
 								>
+									<ArrowUpRight className="w-4 h-4 mr-2" />
 									提现到钱包
 								</Button>
 							</div>
@@ -431,94 +516,110 @@ export default function WalletPage() {
 					</Card>
 
 					{/* Job 托管资金（只读） - 从数据库读取 */}
-					<Card className="border-2 border-purple-200 bg-purple-50">
+					<Card className="border border-purple-100 shadow-md bg-purple-50/50 hover:bg-purple-50 transition-colors relative overflow-hidden">
+						<div className="absolute top-0 right-0 p-4 opacity-5">
+							<Lock className="w-24 h-24 text-purple-600 transform -rotate-12" />
+						</div>
 						<CardHeader>
-							<div className="flex items-center justify-between">
-								<div className="flex items-center gap-2">
-									<div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-										<span className="text-2xl">🔒</span>
+							<div className="flex items-center justify-between relative z-10">
+								<div className="flex items-center gap-3">
+									<div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center border border-purple-200">
+										<Lock className="w-6 h-6 text-purple-600" />
 									</div>
 									<div>
-										<CardTitle className="text-lg">Job 托管</CardTitle>
+										<CardTitle className="text-lg font-semibold">Job 托管</CardTitle>
 										<CardDescription>数据库统计</CardDescription>
 									</div>
 								</div>
 							</div>
 						</CardHeader>
-						<CardContent>
-							<div className="space-y-4">
+						<CardContent className="relative z-10">
+							<div className="space-y-6">
 								<div>
-									<p className="text-3xl font-bold text-gray-900">
-										{jobEscrow}{" "}
-										<span className="text-xl text-gray-500">ETH</span>
+									<div title={`${jobEscrow} ETH`}>
+										<p className="text-4xl font-bold text-gray-900 tracking-tight">
+											{formatDisplayBalance(jobEscrow)}{" "}
+											<span className="text-xl font-medium text-gray-500">ETH</span>
+										</p>
+									</div>
+									<p className="text-sm text-gray-500 mt-1">
+										作为 Job Owner 托管中的资金
 									</p>
 								</div>
 								<Button
-									className="w-full bg-purple-600 hover:bg-purple-700"
+									className="w-full bg-purple-100 text-purple-700 hover:bg-purple-200 border border-purple-200"
 									disabled
 								>
+									<Lock className="w-4 h-4 mr-2" />
 									由智能合约管理
 								</Button>
-								<p className="text-xs text-gray-500 text-center">
-									显示您作为 Job Owner 托管的资金
-								</p>
 							</div>
 						</CardContent>
 					</Card>
 
 					{/* 质押奖励钱包 - 从链上读取 */}
-					<Card className="border-2 border-green-200 hover:border-green-400 transition-colors">
+					<Card className="border border-green-100 shadow-md hover:shadow-xl transition-all duration-300 relative overflow-hidden group">
+						<div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+							<PiggyBank className="w-24 h-24 text-green-600 transform rotate-6" />
+						</div>
 						<CardHeader>
-							<div className="flex items-center justify-between">
-								<div className="flex items-center gap-2">
-									<div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-										<span className="text-2xl">🎁</span>
+							<div className="flex items-center justify-between relative z-10">
+								<div className="flex items-center gap-3">
+									<div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center border border-green-100">
+										<PiggyBank className="w-6 h-6 text-green-600" />
 									</div>
 									<div>
-										<CardTitle className="text-lg">质押奖励</CardTitle>
+										<CardTitle className="text-lg font-semibold">质押奖励</CardTitle>
 										<CardDescription>链上余额</CardDescription>
 									</div>
 								</div>
 							</div>
 						</CardHeader>
-						<CardContent>
+						<CardContent className="relative z-10">
 							<div className="space-y-4">
-								<div>
-									<p className="text-sm text-gray-600 mb-1">奖励余额</p>
-									<p className="text-3xl font-bold text-gray-900">
-										{stakingRewards}{" "}
-										<span className="text-xl text-gray-500">ETH</span>
-									</p>
+								<div className="flex justify-between items-end">
+									<div>
+										<p className="text-sm text-gray-500 mb-1">待领取奖励</p>
+										<div title={`${stakingRewards} ETH`}>
+											<p className="text-3xl font-bold text-gray-900">
+												{formatDisplayBalance(stakingRewards)}{" "}
+												<span className="text-base font-medium text-gray-500">ETH</span>
+											</p>
+										</div>
+									</div>
+									<div className="text-right">
+										<p className="text-sm text-gray-500 mb-1">已质押本金</p>
+										<p className="text-xl font-bold text-blue-600">
+											{stakedAmount} ETH
+										</p>
+									</div>
 								</div>
-								<div>
-									<p className="text-sm text-gray-600 mb-1">已质押金额</p>
-									<p className="text-2xl font-bold text-blue-600">
-										{stakedAmount}{" "}
-										<span className="text-lg text-gray-500">ETH</span>
-									</p>
-								</div>
+								
 								<Button
-									className="w-full bg-green-600 hover:bg-green-700"
+									className="w-full bg-green-600 hover:bg-green-700 shadow-green-200 shadow-lg"
 									onClick={() => handleWithdraw("rewards")}
 									disabled={parseFloat(stakingRewards) === 0}
 								>
-									提现奖励
+									<Coins className="w-4 h-4 mr-2" />
+									提取奖励
 								</Button>
-								<div className="grid grid-cols-2 gap-2">
+								<div className="grid grid-cols-2 gap-3">
 									<Button
 										variant="outline"
-										className="border-blue-500 text-blue-600 hover:bg-blue-50"
+										className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300"
 										onClick={() => setShowStakeDialog(true)}
 									>
-										质押 ETH
+										<ArrowDownLeft className="w-4 h-4 mr-2" />
+										质押
 									</Button>
 									<Button
 										variant="outline"
-										className="border-orange-500 text-orange-600 hover:bg-orange-50"
+										className="border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300"
 										onClick={() => setShowUnstakeDialog(true)}
 										disabled={parseFloat(stakedAmount) === 0}
 									>
-										取消质押
+										<ArrowUpRight className="w-4 h-4 mr-2" />
+										取回
 									</Button>
 								</div>
 							</div>
@@ -528,9 +629,12 @@ export default function WalletPage() {
 
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
 					{/* 资产分布饼图 */}
-					<Card>
+					<Card className="shadow-md border-gray-100">
 						<CardHeader>
-							<CardTitle>资产分布</CardTitle>
+							<CardTitle className="flex items-center gap-2">
+								<Coins className="w-5 h-5 text-blue-500" />
+								资产分布
+							</CardTitle>
 							<CardDescription>各钱包资产占比</CardDescription>
 						</CardHeader>
 						<CardContent>
@@ -541,12 +645,10 @@ export default function WalletPage() {
 											data={getPieChartData()}
 											cx="50%"
 											cy="50%"
-											labelLine={false}
-											label={({ name, percent }) =>
-												`${name} ${((percent || 0) * 100).toFixed(0)}%`
-											}
+											innerRadius={60}
 											outerRadius={80}
-											fill="#8884d8"
+											paddingAngle={5}
+											minAngle={3}
 											dataKey="value"
 										>
 											{getPieChartData().map((entry, index) => (
@@ -556,12 +658,16 @@ export default function WalletPage() {
 												/>
 											))}
 										</Pie>
-										<Tooltip formatter={(value) => `${value} ETH`} />
-										<Legend />
+										<Tooltip 
+											formatter={(value: number) => `${value.toFixed(6)} ETH`}
+											contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+										/>
+										<Legend verticalAlign="bottom" height={36}/>
 									</PieChart>
 								</ResponsiveContainer>
 							) : (
-								<div className="h-64 flex items-center justify-center text-gray-400">
+								<div className="h-64 flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+									<Coins className="w-12 h-12 mb-2 opacity-20" />
 									<p>暂无资产数据</p>
 								</div>
 							)}
@@ -569,32 +675,49 @@ export default function WalletPage() {
 					</Card>
 
 					{/* 资产趋势图 */}
-					<Card>
+					<Card className="shadow-md border-gray-100">
 						<CardHeader>
-							<CardTitle>资产趋势</CardTitle>
+							<CardTitle className="flex items-center gap-2">
+								<TrendingUp className="w-5 h-5 text-green-500" />
+								资产趋势
+							</CardTitle>
 							<CardDescription>最近 30 天收益累计</CardDescription>
 						</CardHeader>
 						<CardContent>
 							{getTrendChartData().length > 0 ? (
 								<ResponsiveContainer width="100%" height={300}>
 									<LineChart data={getTrendChartData()}>
-										<CartesianGrid strokeDasharray="3 3" />
-										<XAxis dataKey="date" />
-										<YAxis />
-										<Tooltip formatter={(value) => `${value} ETH`} />
-										<Legend />
+										<CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+										<XAxis 
+											dataKey="date" 
+											axisLine={false}
+											tickLine={false}
+											tick={{ fill: '#9ca3af', fontSize: 12 }}
+											dy={10}
+										/>
+										<YAxis 
+											axisLine={false}
+											tickLine={false}
+											tick={{ fill: '#9ca3af', fontSize: 12 }}
+										/>
+										<Tooltip 
+											formatter={(value) => `${value} ETH`}
+											contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+										/>
 										<Line
 											type="monotone"
 											dataKey="amount"
 											stroke="#3b82f6"
-											strokeWidth={2}
+											strokeWidth={3}
 											name="累计收益"
-											dot={{ fill: "#3b82f6" }}
+											dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4, stroke: "#fff" }}
+											activeDot={{ r: 6, strokeWidth: 0 }}
 										/>
 									</LineChart>
 								</ResponsiveContainer>
 							) : (
-								<div className="h-64 flex items-center justify-center text-gray-400">
+								<div className="h-64 flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+									<TrendingUp className="w-12 h-12 mb-2 opacity-20" />
 									<p>暂无趋势数据</p>
 								</div>
 							)}
@@ -603,40 +726,56 @@ export default function WalletPage() {
 				</div>
 
 				{/* 交易历史 */}
-				<Card>
-					<CardHeader>
-						<CardTitle>交易历史</CardTitle>
-						<CardDescription>最近的交易记录</CardDescription>
+				<Card className="shadow-md border-gray-100 overflow-hidden">
+					<CardHeader className="border-b border-gray-50 bg-gray-50/50">
+						<div className="flex items-center justify-between">
+							<div>
+								<CardTitle className="flex items-center gap-2">
+									<History className="w-5 h-5 text-purple-500" />
+									交易历史
+								</CardTitle>
+								<CardDescription>最近的交易记录</CardDescription>
+							</div>
+						</div>
 					</CardHeader>
-					<CardContent>
+					<CardContent className="p-0">
 						{transactions.length > 0 ? (
-							<div className="space-y-4">
+							<div className="divide-y divide-gray-100">
 								{/* 表头 */}
-								<div className="hidden md:grid grid-cols-12 gap-4 pb-2 border-b font-medium text-gray-500">
+								<div className="hidden md:grid grid-cols-12 gap-4 p-4 bg-gray-50/30 text-xs font-semibold text-gray-500 uppercase tracking-wider">
 									<div className="col-span-2">类型</div>
 									<div className="col-span-2">金额</div>
 									<div className="col-span-4">描述</div>
 									<div className="col-span-2">交易哈希</div>
-									<div className="col-span-2">时间</div>
+									<div className="col-span-2 text-right">时间</div>
 								</div>
 
 								{/* 交易列表 */}
 								{transactions.map((tx) => (
 									<div
 										key={tx.id}
-										className="grid grid-cols-1 md:grid-cols-12 gap-4 py-3 border-b last:border-b-0 hover:bg-gray-50 rounded-lg transition-colors"
+										className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 hover:bg-blue-50/30 transition-colors items-center group"
 									>
-										<div className="md:col-span-2">
-											<span
-												className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getTransactionTypeColor(tx.type)}`}
-											>
+										<div className="md:col-span-2 flex items-center gap-3">
+											{(() => {
+												const { color, icon: Icon } = getTransactionConfig(tx.type)
+												return (
+													<div className={`w-8 h-8 rounded-full flex items-center justify-center ${color}`}>
+														<Icon className="w-4 h-4" />
+													</div>
+												)
+											})()}
+											<span className="font-medium text-gray-900 md:hidden">
+												{getTransactionTypeName(tx.type)}
+											</span>
+											<span className="hidden md:inline-block text-sm font-medium text-gray-700">
 												{getTransactionTypeName(tx.type)}
 											</span>
 										</div>
-										<div className="md:col-span-2 font-semibold">
-											{tx.amount} {tx.currency}
+										<div className="md:col-span-2 font-bold text-gray-900">
+											{tx.amount} <span className="text-xs font-normal text-gray-500">{tx.currency}</span>
 										</div>
-										<div className="md:col-span-4 text-gray-600">
+										<div className="md:col-span-4 text-sm text-gray-600 line-clamp-1">
 											{tx.description}
 										</div>
 										<div className="md:col-span-2">
@@ -645,25 +784,32 @@ export default function WalletPage() {
 													href={`https://etherscan.io/tx/${tx.txHash}`}
 													target="_blank"
 													rel="noopener noreferrer"
-													className="text-blue-600 hover:text-blue-800 text-sm truncate block"
+													className="text-blue-600 hover:text-blue-800 text-xs font-mono bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 transition-colors inline-block"
 												>
-													{tx.txHash.substring(0, 10)}...
+													{tx.txHash.substring(0, 6)}...{tx.txHash.substring(tx.txHash.length - 4)}
 												</a>
 											) : (
-												<span className="text-gray-400 text-sm">-</span>
+												<span className="text-gray-300 text-xs">-</span>
 											)}
 										</div>
-										<div className="md:col-span-2 text-sm text-gray-500">
-											{new Date(tx.createdAt).toLocaleDateString("zh-CN")}
+										<div className="md:col-span-2 text-sm text-gray-500 md:text-right">
+											{new Date(tx.createdAt).toLocaleDateString("zh-CN", {
+												year: 'numeric',
+												month: '2-digit',
+												day: '2-digit',
+												hour: '2-digit',
+												minute: '2-digit'
+											})}
 										</div>
 									</div>
 								))}
 
 								{/* 分页 */}
 								{transactionTotal > 10 && (
-									<div className="flex items-center justify-center gap-4 pt-4">
+									<div className="flex items-center justify-center gap-4 p-4 border-t border-gray-100 bg-gray-50/30">
 										<Button
 											variant="outline"
+											size="sm"
 											onClick={() =>
 												setTransactionPage((p) => Math.max(1, p - 1))
 											}
@@ -671,11 +817,12 @@ export default function WalletPage() {
 										>
 											上一页
 										</Button>
-										<span className="text-gray-600">
+										<span className="text-sm text-gray-600 font-medium">
 											第 {transactionPage} 页
 										</span>
 										<Button
 											variant="outline"
+											size="sm"
 											onClick={() => setTransactionPage((p) => p + 1)}
 											disabled={transactions.length < 10}
 										>
@@ -685,7 +832,8 @@ export default function WalletPage() {
 								)}
 							</div>
 						) : (
-							<div className="text-center py-12 text-gray-400">
+							<div className="flex flex-col items-center justify-center py-16 text-gray-400">
+								<History className="w-12 h-12 mb-3 opacity-20" />
 								<p>暂无交易记录</p>
 							</div>
 						)}
