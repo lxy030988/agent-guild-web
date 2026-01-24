@@ -1,10 +1,11 @@
-import { MapPin, MessageCircle, Star, Timer } from "lucide-react"
+import { Activity, MessageCircle, Star } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import type { Agent } from "@/types/agent"
+import { AgentStatus } from "@/types/agent"
 
 interface AgentProfileProps {
 	agent: Agent
@@ -12,14 +13,21 @@ interface AgentProfileProps {
 	onMessage?: () => void
 }
 
-const AgentProfile = ({ agent, isOwner, onMessage }: AgentProfileProps) => {
-	const ratingLabel = agent.reviewCount
-		? `${agent.rating.toFixed(1)} (${agent.reviewCount})`
-		: "暂无评分"
+const getCategoryLabel = (category: string) => {
+	const labels: Record<string, string> = {
+		PRODUCTIVITY_TOOLS: "生产力工具",
+		CREATIVE_ASSISTANTS: "创意助手",
+		DEVELOPER_TOOLS: "开发者工具",
+		OTHERS: "其他",
+	}
+	return labels[category] || category
+}
 
-	const locationLabel = agent.location.isRemote
-		? "Remote"
-		: `${agent.location.city}, ${agent.location.country}`
+const AgentProfile = ({ agent, isOwner, onMessage }: AgentProfileProps) => {
+	const isActive = agent.status === AgentStatus.ACTIVE
+	const ratingLabel = agent.reviewCount
+		? `${(agent.rating ?? 0).toFixed(1)} (${agent.reviewCount})`
+		: "暂无评分"
 
 	return (
 		<Card className="glass-card overflow-hidden">
@@ -28,27 +36,26 @@ const AgentProfile = ({ agent, isOwner, onMessage }: AgentProfileProps) => {
 					<div className="flex items-start gap-5">
 						<Avatar className="h-16 w-16">
 							<AvatarImage
-								src={
-									agent.user?.avatar ||
-									`https://avatar.vercel.sh/${agent.id}.png`
-								}
-								alt={agent.user?.name || agent.title}
+								src={agent.avatar || `https://avatar.vercel.sh/${agent.id}.png`}
+								alt={agent.name}
 							/>
-							<AvatarFallback>{agent.title.slice(0, 1)}</AvatarFallback>
+							<AvatarFallback>{agent.name.slice(0, 1)}</AvatarFallback>
 						</Avatar>
 						<div className="space-y-2">
 							<div className="flex flex-wrap items-center gap-3">
 								<h1 className="text-2xl font-bold text-foreground">
-									{agent.title}
+									{agent.name}
 								</h1>
-								<Badge variant={agent.isActive ? "success" : "secondary"}>
-									{agent.isActive ? "Available" : "Offline"}
+								<Badge variant={isActive ? "success" : "secondary"}>
+									{isActive ? "Available" : "Offline"}
 								</Badge>
+								{agent.isVerified && (
+									<Badge variant="default">已验证</Badge>
+								)}
 								{isOwner ? <Badge variant="outline">Owner</Badge> : null}
 							</div>
 							<p className="text-sm text-muted-foreground">
-								{agent.category}
-								{agent.subcategory ? ` · ${agent.subcategory}` : ""}
+								{getCategoryLabel(agent.category)}
 							</p>
 							<div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
 								<span className="flex items-center gap-1">
@@ -56,12 +63,8 @@ const AgentProfile = ({ agent, isOwner, onMessage }: AgentProfileProps) => {
 									{ratingLabel}
 								</span>
 								<span className="flex items-center gap-1">
-									<MapPin className="h-4 w-4 text-primary" />
-									{locationLabel}
-								</span>
-								<span className="flex items-center gap-1">
-									<Timer className="h-4 w-4 text-primary" />
-									{agent.responseTime || "响应时间待更新"}
+									<Activity className="h-4 w-4 text-primary" />
+									{agent.healthStatus}
 								</span>
 							</div>
 						</div>
@@ -77,19 +80,25 @@ const AgentProfile = ({ agent, isOwner, onMessage }: AgentProfileProps) => {
 						</Button>
 					</div>
 				</div>
-				<div className="mt-6 grid gap-4 rounded-2xl border border-border bg-background/70 p-4 md:grid-cols-3">
+				<div className="mt-6 grid gap-4 rounded-2xl border border-border bg-background/70 p-4 md:grid-cols-4">
 					<div>
 						<p className="text-xs uppercase text-muted-foreground">
-							Completed Jobs
+							调用次数
 						</p>
 						<p className="text-lg font-semibold text-foreground">
-							{agent.completedJobs}
+							{agent.jobCount}
 						</p>
 					</div>
 					<div>
-						<p className="text-xs uppercase text-muted-foreground">Languages</p>
-						<p className="text-sm text-foreground">
-							{agent.languages.length ? agent.languages.join(", ") : "待补充"}
+						<p className="text-xs uppercase text-muted-foreground">浏览次数</p>
+						<p className="text-lg font-semibold text-foreground">
+							{agent.viewCount}
+						</p>
+					</div>
+					<div>
+						<p className="text-xs uppercase text-muted-foreground">评论数</p>
+						<p className="text-lg font-semibold text-foreground">
+							{agent.reviewCount}
 						</p>
 					</div>
 					<div>

@@ -22,19 +22,22 @@ export interface AgentFiltersProps {
 	className?: string
 }
 
-const ratingOptions = [
-	{ label: "全部评分", value: "all" },
-	{ label: "4+", value: "4" },
-	{ label: "4.5+", value: "4.5" },
-	{ label: "5", value: "5" },
-]
+const getCategoryLabel = (category: string) => {
+	const labels: Record<string, string> = {
+		PRODUCTIVITY_TOOLS: "生产力工具",
+		CREATIVE_ASSISTANTS: "创意助手",
+		DEVELOPER_TOOLS: "开发者工具",
+		OTHERS: "其他",
+	}
+	return labels[category] || category
+}
 
 const sortOptions = [
 	{ label: "默认排序", value: "default" },
+	{ label: "最新创建", value: "createdAt:desc" },
+	{ label: "浏览最多", value: "viewCount:desc" },
 	{ label: "评分最高", value: "rating:desc" },
-	{ label: "价格最低", value: "price:asc" },
-	{ label: "评价最多", value: "reviews:desc" },
-	{ label: "最新加入", value: "created:desc" },
+	{ label: "调用最多", value: "jobCount:desc" },
 ]
 
 const AgentFilters = ({
@@ -46,42 +49,24 @@ const AgentFilters = ({
 	className,
 }: AgentFiltersProps) => {
 	const categoryId = useId()
-	const locationId = useId()
-	const ratingId = useId()
-	const minPriceId = useId()
-	const maxPriceId = useId()
+	const tagsId = useId()
 	const sortId = useId()
-
-	const handleNumberChange = (key: "minPrice" | "maxPrice", value: string) => {
-		const parsed = value ? Number(value) : undefined
-		onChange({
-			...filters,
-			[key]: Number.isNaN(parsed) ? undefined : parsed,
-		})
-	}
-
-	const handleRatingChange = (value: string) => {
-		const parsed = value === "all" ? undefined : Number(value)
-		onChange({
-			...filters,
-			minRating: Number.isNaN(parsed) ? undefined : parsed,
-		})
-	}
+	const verifiedId = useId()
 
 	const handleSortChange = (value: string) => {
 		if (value === "default") {
 			onChange({
 				...filters,
 				sortBy: undefined,
-				sortOrder: undefined,
+				order: undefined,
 			})
 			return
 		}
-		const [sortBy, sortOrder] = value.split(":")
+		const [sortBy, order] = value.split(":")
 		onChange({
 			...filters,
 			sortBy: sortBy as AgentFiltersValue["sortBy"],
-			sortOrder: sortOrder as AgentFiltersValue["sortOrder"],
+			order: order as AgentFiltersValue["order"],
 		})
 	}
 
@@ -103,7 +88,7 @@ const AgentFilters = ({
 					onValueChange={(value) =>
 						onChange({
 							...filters,
-							category: value === "all" ? undefined : value,
+							category: value === "all" ? undefined : (value as AgentFiltersValue["category"]),
 						})
 					}
 					value={filters.category ?? "all"}
@@ -116,7 +101,7 @@ const AgentFilters = ({
 						<SelectItem value="all">全部分类</SelectItem>
 						{categories.map((category) => (
 							<SelectItem key={category} value={category}>
-								{category}
+								{getCategoryLabel(category)}
 							</SelectItem>
 						))}
 					</SelectContent>
@@ -125,20 +110,20 @@ const AgentFilters = ({
 
 			<div className="min-w-[160px] flex-1">
 				<label
-					htmlFor={locationId}
+					htmlFor={tagsId}
 					className="text-xs font-medium text-muted-foreground"
 				>
-					位置
+					标签
 				</label>
 				<Input
-					id={locationId}
+					id={tagsId}
 					className="mt-2"
-					placeholder="输入城市/地区"
-					value={filters.location ?? ""}
+					placeholder="输入标签（逗号分隔）"
+					value={filters.tags ?? ""}
 					onChange={(event) =>
 						onChange({
 							...filters,
-							location: event.target.value || undefined,
+							tags: event.target.value || undefined,
 						})
 					}
 					disabled={loading}
@@ -147,69 +132,29 @@ const AgentFilters = ({
 
 			<div className="min-w-[140px]">
 				<label
-					htmlFor={ratingId}
+					htmlFor={verifiedId}
 					className="text-xs font-medium text-muted-foreground"
 				>
-					最低评分
+					验证状态
 				</label>
 				<Select
-					onValueChange={handleRatingChange}
-					value={filters.minRating?.toString() ?? "all"}
+					onValueChange={(value) =>
+						onChange({
+							...filters,
+							verifiedOnly: value === "verified" ? true : undefined,
+						})
+					}
+					value={filters.verifiedOnly ? "verified" : "all"}
 					disabled={loading}
 				>
-					<SelectTrigger id={ratingId} className="mt-2">
+					<SelectTrigger id={verifiedId} className="mt-2">
 						<SelectValue placeholder="全部" />
 					</SelectTrigger>
 					<SelectContent>
-						{ratingOptions.map((option) => (
-							<SelectItem key={option.label} value={option.value}>
-								{option.label}
-							</SelectItem>
-						))}
+						<SelectItem value="all">全部</SelectItem>
+						<SelectItem value="verified">仅已验证</SelectItem>
 					</SelectContent>
 				</Select>
-			</div>
-
-			<div className="min-w-[120px]">
-				<label
-					htmlFor={minPriceId}
-					className="text-xs font-medium text-muted-foreground"
-				>
-					最低价格
-				</label>
-				<Input
-					id={minPriceId}
-					className="mt-2"
-					type="number"
-					min={0}
-					placeholder="0"
-					value={filters.minPrice ?? ""}
-					onChange={(event) =>
-						handleNumberChange("minPrice", event.target.value)
-					}
-					disabled={loading}
-				/>
-			</div>
-
-			<div className="min-w-[120px]">
-				<label
-					htmlFor={maxPriceId}
-					className="text-xs font-medium text-muted-foreground"
-				>
-					最高价格
-				</label>
-				<Input
-					id={maxPriceId}
-					className="mt-2"
-					type="number"
-					min={0}
-					placeholder="不限"
-					value={filters.maxPrice ?? ""}
-					onChange={(event) =>
-						handleNumberChange("maxPrice", event.target.value)
-					}
-					disabled={loading}
-				/>
 			</div>
 
 			<div className="min-w-[160px]">
@@ -222,8 +167,8 @@ const AgentFilters = ({
 				<Select
 					onValueChange={handleSortChange}
 					value={
-						filters.sortBy && filters.sortOrder
-							? `${filters.sortBy}:${filters.sortOrder}`
+						filters.sortBy && filters.order
+							? `${filters.sortBy}:${filters.order}`
 							: "default"
 					}
 					disabled={loading}

@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import type { Agent, Pricing } from "@/types/agent"
+import type { Agent } from "@/types/agent"
+import { AgentStatus } from "@/types/agent"
 
 export interface AgentCardProps {
 	agent: Agent
@@ -15,30 +16,14 @@ export interface AgentCardProps {
 	className?: string
 }
 
-const formatCurrency = (pricing: Pricing) => {
-	if (pricing.currency === "ETH") {
-		return `Ξ${pricing.price}`
+const getCategoryLabel = (category: string) => {
+	const labels: Record<string, string> = {
+		PRODUCTIVITY_TOOLS: "生产力工具",
+		CREATIVE_ASSISTANTS: "创意助手",
+		DEVELOPER_TOOLS: "开发者工具",
+		OTHERS: "其他",
 	}
-	return `$${pricing.price}`
-}
-
-const getStartingPrice = (pricing: Pricing[]) => {
-	if (!pricing.length) {
-		return "价格面议"
-	}
-	const sorted = [...pricing].sort((a, b) => a.price - b.price)
-	const base = sorted[0]
-	return `${formatCurrency(base)}/${base.unit}`
-}
-
-const getLocationLabel = (agent: Agent) => {
-	if (agent.location?.isRemote) {
-		return "Remote"
-	}
-	if (agent.location?.city || agent.location?.country) {
-		return `${agent.location.city}, ${agent.location.country}`
-	}
-	return "Location TBA"
+	return labels[category] || category
 }
 
 const AgentCard = ({
@@ -47,8 +32,9 @@ const AgentCard = ({
 	showActions = true,
 	className,
 }: AgentCardProps) => {
+	const isActive = agent.status === AgentStatus.ACTIVE
 	const ratingLabel = agent.reviewCount
-		? `${agent.rating.toFixed(1)} (${agent.reviewCount})`
+		? `${(agent.rating ?? 0).toFixed(1)} (${agent.reviewCount})`
 		: "暂无评分"
 
 	return (
@@ -61,34 +47,34 @@ const AgentCard = ({
 			<CardHeader className="flex flex-row items-start gap-4 pb-3">
 				<Avatar className="h-12 w-12">
 					<AvatarImage
-						src={
-							agent.user?.avatar || `https://avatar.vercel.sh/${agent.id}.png`
-						}
-						alt={agent.user?.name || agent.title}
+						src={agent.avatar || `https://avatar.vercel.sh/${agent.id}.png`}
+						alt={agent.name}
 					/>
-					<AvatarFallback>{agent.title.slice(0, 1)}</AvatarFallback>
+					<AvatarFallback>{agent.name.slice(0, 1)}</AvatarFallback>
 				</Avatar>
 				<div className="flex-1">
 					<h3 className="text-base font-semibold text-foreground">
-						{agent.title}
+						{agent.name}
 					</h3>
-					<p className="text-sm text-muted-foreground">{agent.category}</p>
+					<p className="text-sm text-muted-foreground">
+						{getCategoryLabel(agent.category)}
+					</p>
 				</div>
-				<Badge variant={agent.isActive ? "success" : "secondary"}>
-					{agent.isActive ? "Available" : "Offline"}
+				<Badge variant={isActive ? "success" : "secondary"}>
+					{isActive ? "Available" : "Offline"}
 				</Badge>
 			</CardHeader>
 			<CardContent className="space-y-3">
 				<p className="line-clamp-2 text-sm text-muted-foreground">
-					{agent.description}
+					{agent.shortDesc || agent.description}
 				</p>
 				<div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
 					<span className="flex items-center gap-1">
 						<Star className="h-3 w-3 text-yellow-500" />
 						{ratingLabel}
 					</span>
-					<span>{getLocationLabel(agent)}</span>
-					<span>{getStartingPrice(agent.pricing)}</span>
+					<span>{agent.jobCount} 次调用</span>
+					<span>{agent.viewCount} 次浏览</span>
 				</div>
 				{agent.tags?.length ? (
 					<div className="flex flex-wrap gap-2">

@@ -10,6 +10,13 @@ const parseNumber = (value: string | null): number | undefined => {
 	return Number.isNaN(parsed) ? undefined : parsed
 }
 
+const parseBoolean = (value: string | null): boolean | undefined => {
+	if (!value) {
+		return undefined
+	}
+	return value === "true"
+}
+
 export const parseAgentListQuery = (
 	params: URLSearchParams,
 	defaultLimit: number,
@@ -18,15 +25,13 @@ export const parseAgentListQuery = (
 	const limit = parseNumber(params.get("limit")) ?? defaultLimit
 
 	return {
-		category: params.get("category") || undefined,
-		location: params.get("location") || undefined,
-		minRating: parseNumber(params.get("minRating")),
-		minPrice: parseNumber(params.get("minPrice")),
-		maxPrice: parseNumber(params.get("maxPrice")),
-		sortBy: (params.get("sortBy") as AgentListQuery["sortBy"]) || undefined,
-		sortOrder:
-			(params.get("sortOrder") as AgentListQuery["sortOrder"]) || undefined,
+		category: (params.get("category") as AgentListQuery["category"]) || undefined,
+		tags: params.get("tags") || undefined,
 		search: params.get("search") || undefined,
+		status: (params.get("status") as AgentListQuery["status"]) || undefined,
+		sortBy: (params.get("sortBy") as AgentListQuery["sortBy"]) || undefined,
+		order: (params.get("order") as AgentListQuery["order"]) || undefined,
+		verifiedOnly: parseBoolean(params.get("verifiedOnly")),
 		page: page < 1 ? DEFAULT_PAGE : page,
 		limit: limit <= 0 ? defaultLimit : limit,
 	}
@@ -40,26 +45,23 @@ export const serializeAgentListQuery = (
 	if (query.category) {
 		params.set("category", query.category)
 	}
-	if (query.location) {
-		params.set("location", query.location)
+	if (query.tags) {
+		params.set("tags", query.tags)
 	}
-	if (query.minRating !== undefined) {
-		params.set("minRating", String(query.minRating))
+	if (query.search) {
+		params.set("search", query.search)
 	}
-	if (query.minPrice !== undefined) {
-		params.set("minPrice", String(query.minPrice))
-	}
-	if (query.maxPrice !== undefined) {
-		params.set("maxPrice", String(query.maxPrice))
+	if (query.status) {
+		params.set("status", query.status)
 	}
 	if (query.sortBy) {
 		params.set("sortBy", query.sortBy)
 	}
-	if (query.sortOrder) {
-		params.set("sortOrder", query.sortOrder)
+	if (query.order) {
+		params.set("order", query.order)
 	}
-	if (query.search) {
-		params.set("search", query.search)
+	if (query.verifiedOnly !== undefined) {
+		params.set("verifiedOnly", String(query.verifiedOnly))
 	}
 	if (query.page > DEFAULT_PAGE) {
 		params.set("page", String(query.page))

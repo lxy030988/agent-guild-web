@@ -1,11 +1,6 @@
 import { atom } from "jotai"
-import {
-	type Agent,
-	AgentCategory,
-	AgentStatus,
-	type CategoryStats,
-	type QueryAgentParams,
-} from "../utils/agent-api"
+import type { Agent, AgentListQuery, CategoryStats } from "@/types/agent"
+import { AgentCategory, AgentStatus } from "@/types/agent"
 
 /**
  * Agent 列表状态
@@ -35,7 +30,7 @@ export const agentDetailLoadingAtom = atom<boolean>(false)
 /**
  * 查询参数
  */
-export const agentQueryParamsAtom = atom<QueryAgentParams>({
+export const agentQueryParamsAtom = atom<AgentListQuery>({
 	page: 1,
 	limit: 20,
 	sortBy: "createdAt",

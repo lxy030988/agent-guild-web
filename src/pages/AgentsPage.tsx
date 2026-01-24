@@ -5,10 +5,8 @@ import { AgentFilters, AgentGrid } from "@/components/agent"
 import { EmptyState, Pagination, SearchBar } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { useAgents } from "@/hooks/useAgents"
-import type {
-	AgentFilters as AgentFiltersState,
-	AgentListQuery,
-} from "@/types/agent"
+import { AgentCategory } from "@/types/agent"
+import type { AgentFilters as AgentFiltersState, AgentListQuery } from "@/types/agent"
 import {
 	mergeAgentListQuery,
 	parseAgentListQuery,
@@ -16,14 +14,9 @@ import {
 } from "@/utils/agentFilters"
 
 const DEFAULT_LIMIT = 12
-const CATEGORY_OPTIONS = [
-	"Strategy",
-	"Design",
-	"Engineering",
-	"Growth",
-	"Operations",
-	"Research",
-]
+
+// 使用新的分类枚举
+const CATEGORY_OPTIONS = Object.values(AgentCategory)
 
 const AgentsPage = () => {
 	const [searchParams, setSearchParams] = useSearchParams()
@@ -57,8 +50,8 @@ const AgentsPage = () => {
 		)
 	}
 
-	const agents = data?.data?.data ?? []
-	const total = data?.total ?? 0
+	const agents = data?.data ?? []
+	const total = data?.meta?.total ?? 0
 
 	return (
 		<section className="mx-auto flex w-full max-w-6xl flex-col gap-6 py-10">

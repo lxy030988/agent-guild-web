@@ -1,15 +1,36 @@
 import { ShieldCheck, Wallet } from "lucide-react"
-import { useMemo } from "react"
+import type React from "react"
+import { useMemo, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { useAccount, useConnect } from "wagmi"
 
-import { AgentForm } from "@/components/agent"
 import { EmptyState, Loading } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { useAgent } from "@/hooks/useAgent"
 import { useCreateAgent, useUpdateAgent } from "@/hooks/useAgentMutations"
 import { useAuth } from "@/hooks/useAuth"
+import { AgentCategory, type CreateAgentDTO } from "@/types/agent"
+
+const getCategoryLabel = (category: string) => {
+	const labels: Record<string, string> = {
+		PRODUCTIVITY_TOOLS: "生产力工具",
+		CREATIVE_ASSISTANTS: "创意助手",
+		DEVELOPER_TOOLS: "开发者工具",
+		OTHERS: "其他",
+	}
+	return labels[category] || category
+}
 
 const AgentFormPage = () => {
 	const navigate = useNavigate()
@@ -30,6 +51,50 @@ const AgentFormPage = () => {
 	const { mutateAsync: updateAgent, isPending: updating } = useUpdateAgent(
 		agentId || 0,
 	)
+
+	const [formData, setFormData] = useState<CreateAgentDTO>(() => {
+		if (agent) {
+			return {
+				name: agent.name,
+				description: agent.description,
+				shortDesc: agent.shortDesc || "",
+				category: agent.category,
+				tags: agent.tags,
+				endpointUrl: agent.endpointUrl,
+				endpointAuthType: agent.endpointAuthType,
+				capabilities: agent.capabilities,
+				timeoutMs: agent.timeoutMs,
+			}
+		}
+		return {
+			name: "",
+			description: "",
+			shortDesc: "",
+			category: AgentCategory.OTHERS,
+			tags: ["AI"],
+			endpointUrl: "",
+			endpointAuthType: "public",
+			capabilities: [],
+			timeoutMs: 30000,
+		}
+	})
+
+	// 当 agent 数据加载后更新表单
+	useMemo(() => {
+		if (agent && isEditMode) {
+			setFormData({
+				name: agent.name,
+				description: agent.description,
+				shortDesc: agent.shortDesc || "",
+				category: agent.category,
+				tags: agent.tags,
+				endpointUrl: agent.endpointUrl,
+				endpointAuthType: agent.endpointAuthType,
+				capabilities: agent.capabilities,
+				timeoutMs: agent.timeoutMs,
+			})
+		}
+	}, [agent, isEditMode])
 
 	const handleConnectWallet = () => {
 		const metamaskConnector = connectors.find(
@@ -88,7 +153,7 @@ const AgentFormPage = () => {
 		)
 	}
 
-	if (isEditMode && agent && user?.id !== agent.userId) {
+	if (isEditMode && agent && user?.id !== agent.ownerId) {
 		return (
 			<section className="mx-auto flex w-full max-w-4xl flex-col gap-6 py-16">
 				<EmptyState
@@ -103,15 +168,22 @@ const AgentFormPage = () => {
 		)
 	}
 
-	const handleSubmit = async (payload: Parameters<typeof createAgent>[0]) => {
-		if (isEditMode && agent) {
-			const updated = await updateAgent(payload)
-			navigate(`/agents/${updated.id}`)
-			return
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault()
+		try {
+			if (isEditMode && agent) {
+				const updated = await updateAgent(formData)
+				navigate(`/agents/${updated.id}`)
+				return
+			}
+			const created = await createAgent(formData)
+			navigate(`/agents/${created.id}`)
+		} catch (err) {
+			console.error("Failed to save agent:", err)
 		}
-		const created = await createAgent(payload)
-		navigate(`/agents/${created.id}`)
 	}
+
+	const submitting = creating || updating
 
 	return (
 		<section className="mx-auto flex w-full max-w-6xl flex-col gap-8 py-10">
@@ -149,13 +221,154 @@ const AgentFormPage = () => {
 				</CardContent>
 			</Card>
 
-			<AgentForm
-				mode={isEditMode ? "edit" : "create"}
-				initialData={agent}
-				submitting={creating || updating}
-				onSubmit={handleSubmit}
-				onCancel={() => navigate(isEditMode ? `/agents/${id}` : "/agents")}
-			/>
+			<Card className="p-8">
+				<form onSubmit={handleSubmit} className="space-y-6">
+					<div className="space-y-2">
+						<Label htmlFor="name">Name</Label>
+						<Input
+							id="name"
+							required
+							value={formData.name}
+							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+								setFormData({ ...formData, name: e.target.value })
+							}
+							placeholder="My Awesome Agent"
+						/>
+					</div>
+
+					<div className="space-y-2">
+						<Label htmlFor="shortDesc">Short Description</Label>
+						<Input
+							id="shortDesc"
+							value={formData.shortDesc}
+							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+								setFormData({ ...formData, shortDesc: e.target.value })
+							}
+							placeholder="A brief summary of your agent"
+						/>
+					</div>
+
+					<div className="space-y-2">
+						<Label htmlFor="description">Description</Label>
+						<Textarea
+							id="description"
+							required
+							className="min-h-[100px]"
+							value={formData.description}
+							onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+								setFormData({ ...formData, description: e.target.value })
+							}
+							placeholder="Tell us more about what your agent does..."
+						/>
+					</div>
+
+					<div className="grid grid-cols-2 gap-4">
+						<div className="space-y-2">
+							<Label>Category</Label>
+							<Select
+								value={formData.category}
+								onValueChange={(value: AgentCategory) =>
+									setFormData({ ...formData, category: value })
+								}
+							>
+								<SelectTrigger>
+									<SelectValue placeholder="Select category" />
+								</SelectTrigger>
+								<SelectContent>
+									{Object.values(AgentCategory).map((cat) => (
+										<SelectItem key={cat} value={cat}>
+											{getCategoryLabel(cat)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+
+						<div className="space-y-2">
+							<Label htmlFor="timeout">Timeout (ms)</Label>
+							<Input
+								id="timeout"
+								type="number"
+								value={formData.timeoutMs}
+								onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+									setFormData({
+										...formData,
+										timeoutMs: parseInt(e.target.value, 10) || 0,
+									})
+								}
+							/>
+						</div>
+					</div>
+
+					<div className="space-y-2">
+						<Label htmlFor="endpointUrl">Endpoint URL</Label>
+						<Input
+							id="endpointUrl"
+							required
+							type="url"
+							value={formData.endpointUrl}
+							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+								setFormData({ ...formData, endpointUrl: e.target.value })
+							}
+							placeholder="https://api.myagent.com/execute"
+						/>
+					</div>
+
+					<div className="space-y-2">
+						<Label>Authentication Type</Label>
+						<Select
+							value={formData.endpointAuthType}
+							onValueChange={(value: "public" | "bearer" | "api-key") =>
+								setFormData({ ...formData, endpointAuthType: value })
+							}
+						>
+							<SelectTrigger>
+								<SelectValue placeholder="Select auth type" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="public">Public</SelectItem>
+								<SelectItem value="bearer">Bearer Token</SelectItem>
+								<SelectItem value="api-key">API Key</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+
+					<div className="space-y-2">
+						<Label htmlFor="tags">Tags (comma separated)</Label>
+						<Input
+							id="tags"
+							value={formData.tags.join(", ")}
+							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+								setFormData({
+									...formData,
+									tags: e.target.value.split(",").map((t) => t.trim()).filter(Boolean),
+								})
+							}
+							placeholder="AI, automation, code-review"
+						/>
+					</div>
+
+					<div className="flex justify-end gap-4 mt-8">
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => navigate(isEditMode ? `/agents/${id}` : "/agents")}
+							disabled={submitting}
+						>
+							Cancel
+						</Button>
+						<Button type="submit" disabled={submitting}>
+							{submitting
+								? isEditMode
+									? "Saving..."
+									: "Creating..."
+								: isEditMode
+								? "Save Changes"
+								: "Create Agent"}
+						</Button>
+					</div>
+				</form>
+			</Card>
 		</section>
 	)
 }

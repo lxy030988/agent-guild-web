@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import type { CreateAgentDTO, UpdateAgentDTO } from "@/types/agent"
-import { agentApi } from "@/utils/agentApi"
+import { agentApi } from "@/utils/agent-api"
 
 export const useCreateAgent = () => {
 	const queryClient = useQueryClient()

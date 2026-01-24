@@ -1,9 +1,9 @@
 import { ArrowLeft, Pencil } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { useMemo } from "react"
 import toast from "react-hot-toast"
 import { Link, useNavigate, useParams } from "react-router-dom"
 
-import { AgentProfile, ReviewSection, ServiceList } from "@/components/agent"
+import { AgentProfile, ReviewSection } from "@/components/agent"
 import { EmptyState, Loading } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,9 +16,6 @@ const AgentDetailPage = () => {
 	const navigate = useNavigate()
 	const { user } = useAuth()
 	const agentId = useMemo(() => Number(id), [id])
-	const [selectedServiceId, setSelectedServiceId] = useState<
-		number | undefined
-	>()
 
 	const {
 		data: agent,
@@ -33,12 +30,6 @@ const AgentDetailPage = () => {
 			sortBy: "recent",
 		},
 	)
-
-	useEffect(() => {
-		if (agent?.services?.length) {
-			setSelectedServiceId(agent.services[0].id)
-		}
-	}, [agent])
 
 	if (Number.isNaN(agentId)) {
 		return (
@@ -68,7 +59,7 @@ const AgentDetailPage = () => {
 		)
 	}
 
-	const isOwner = user?.id === agent.userId
+	const isOwner = user?.id === agent.ownerId
 
 	return (
 		<section className="mx-auto flex w-full max-w-6xl flex-col gap-6 py-10">
@@ -100,59 +91,83 @@ const AgentDetailPage = () => {
 
 			<div className="grid gap-6 lg:grid-cols-3">
 				<div className="space-y-6 lg:col-span-2">
-					<ServiceList
-						services={agent.services}
-						selectedServiceId={selectedServiceId}
-						onSelect={(service) => setSelectedServiceId(service.id)}
-					/>
+					<Card className="glass-card">
+						<CardHeader>
+							<CardTitle className="text-lg font-semibold">能力介绍</CardTitle>
+						</CardHeader>
+						<CardContent>
+							{agent.capabilities?.length ? (
+								<div className="flex flex-wrap gap-2">
+									{agent.capabilities.map((cap) => (
+										<span
+											key={cap}
+											className="rounded-full bg-primary/10 px-3 py-1 text-sm text-primary"
+										>
+											{cap}
+										</span>
+									))}
+								</div>
+							) : (
+								<p className="text-sm text-muted-foreground">暂无能力描述</p>
+							)}
+						</CardContent>
+					</Card>
 					<ReviewSection data={reviews} loading={reviewLoading} />
 				</div>
 				<div className="space-y-6">
 					<Card className="glass-card">
 						<CardHeader>
-							<CardTitle className="text-lg font-semibold">价格方案</CardTitle>
+							<CardTitle className="text-lg font-semibold">Agent 配置</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-3">
-							{agent.pricing.length ? (
-								agent.pricing.map((plan) => (
-									<div
-										key={plan.id}
-										className="rounded-2xl border border-border bg-background/80 p-4"
-									>
-										<div className="flex items-center justify-between">
-											<h4 className="text-sm font-semibold text-foreground">
-												{plan.name}
-											</h4>
-											<span className="text-sm font-semibold text-foreground">
-												{plan.currency === "ETH" ? "Ξ" : "$"}
-												{plan.price}/{plan.unit}
-											</span>
-										</div>
-										{plan.description ? (
-											<p className="mt-2 text-xs text-muted-foreground">
-												{plan.description}
-											</p>
-										) : null}
+							<div className="rounded-2xl border border-border bg-background/80 p-4">
+								<div className="space-y-2">
+									<div className="flex items-center justify-between">
+										<span className="text-sm text-muted-foreground">端点 URL</span>
+										<span className="text-sm font-mono text-foreground truncate max-w-[200px]">
+											{agent.endpointUrl}
+										</span>
 									</div>
-								))
-							) : (
-								<p className="text-sm text-muted-foreground">暂无价格方案</p>
-							)}
+									<div className="flex items-center justify-between">
+										<span className="text-sm text-muted-foreground">认证类型</span>
+										<span className="text-sm text-foreground">
+											{agent.endpointAuthType}
+										</span>
+									</div>
+									<div className="flex items-center justify-between">
+										<span className="text-sm text-muted-foreground">超时时间</span>
+										<span className="text-sm text-foreground">
+											{agent.timeoutMs}ms
+										</span>
+									</div>
+									<div className="flex items-center justify-between">
+										<span className="text-sm text-muted-foreground">健康状态</span>
+										<span className={`text-sm font-medium ${
+											agent.healthStatus === "HEALTHY"
+												? "text-green-500"
+												: agent.healthStatus === "UNHEALTHY"
+												? "text-red-500"
+												: "text-yellow-500"
+										}`}>
+											{agent.healthStatus}
+										</span>
+									</div>
+								</div>
+							</div>
 						</CardContent>
 					</Card>
 					<Card className="glass-card">
 						<CardHeader>
-							<CardTitle className="text-lg font-semibold">预约提示</CardTitle>
+							<CardTitle className="text-lg font-semibold">使用提示</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-3 text-sm text-muted-foreground">
-							<p>选择服务后可发起预约请求。</p>
-							<p>当前预约流程将在后续版本开放。</p>
+							<p>选择服务后可发起调用请求。</p>
+							<p>当前调用流程将在后续版本开放。</p>
 							<Button
 								className="w-full rounded-full"
-								disabled={!selectedServiceId}
-								onClick={() => toast("预约功能建设中")}
+								onClick={() => toast("调用功能建设中")}
 							>
-								发起预约
+								调用 Agent
 							</Button>
 						</CardContent>
 					</Card>
