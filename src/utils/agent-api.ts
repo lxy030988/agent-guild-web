@@ -46,6 +46,7 @@ export interface Agent {
 	configuration: Record<string, unknown>
 	endpointUrl: string
 	endpointAuthType: string
+	secretKey: string | null
 	healthCheckUrl: string | null
 	timeoutMs: number
 	viewCount: number
@@ -78,6 +79,7 @@ export interface CreateAgentDto {
 	capabilities?: string[]
 	endpointUrl: string
 	endpointAuthType?: "public" | "bearer" | "api-key"
+	secretKey?: string
 	healthCheckUrl?: string
 	timeoutMs?: number
 	configuration?: Record<string, unknown>

@@ -1,6 +1,7 @@
 import type React from "react"
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { useNavigate, useParams } from "react-router-dom"
+import { toast } from "sonner"
 import { Button } from "../components/ui/button"
 import { Card } from "../components/ui/card"
 import { Input } from "../components/ui/input"
@@ -15,41 +16,94 @@ import {
 import { Textarea } from "../components/ui/textarea"
 import { AgentCategory, agentApi } from "../utils/agent-api"
 
-const AgentCreatePage = () => {
+const AgentEditPage = () => {
+	const { id } = useParams<{ id: string }>()
 	const navigate = useNavigate()
 	const [isLoading, setIsLoading] = useState(false)
+	const [isFetching, setIsFetching] = useState(true)
 	const [formData, setFormData] = useState({
 		name: "",
 		description: "",
 		shortDesc: "",
 		category: AgentCategory.OTHERS,
-		tags: ["AI"], // 后端验证：至少一个标签
+		tags: [] as string[],
 		endpointUrl: "",
 		endpointAuthType: "public" as "public" | "bearer" | "api-key",
 		secretKey: "",
-		capabilities: ["code-review", "code-generation"] as string[],
+		capabilities: [] as string[],
 		timeoutMs: 30000,
 	})
 	const [tagInput, setTagInput] = useState("")
 	const [capabilityInput, setCapabilityInput] = useState("")
 
+	// 加载现有 Agent 数据
+	useEffect(() => {
+		const fetchAgent = async () => {
+			if (!id) return
+
+			try {
+				setIsFetching(true)
+				const agent = await agentApi.getAgent(Number.parseInt(id, 10))
+				setFormData({
+					name: agent.name,
+					description: agent.description,
+					shortDesc: agent.shortDesc || "",
+					category: agent.category,
+					tags: agent.tags || [],
+					endpointUrl: agent.endpointUrl,
+					endpointAuthType: (agent.endpointAuthType || "public") as
+						| "public"
+						| "bearer"
+						| "api-key",
+					secretKey: agent.secretKey || "",
+					capabilities: agent.capabilities || [],
+					timeoutMs: agent.timeoutMs || 30000,
+				})
+			} catch (error) {
+				console.error("Failed to fetch agent:", error)
+				toast.error("Failed to load agent data")
+				navigate("/agents")
+			} finally {
+				setIsFetching(false)
+			}
+		}
+
+		fetchAgent()
+	}, [id, navigate])
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
+		if (!id) return
+
 		setIsLoading(true)
 		try {
-			const result = await agentApi.createAgent(formData)
-			navigate(`/agents/${result.id}`)
+			await agentApi.updateAgent(Number.parseInt(id, 10), formData)
+			toast.success("Agent updated successfully!")
+			navigate(`/agents/${id}`)
 		} catch (error) {
-			console.error("Failed to create agent:", error)
+			console.error("Failed to update agent:", error)
+			toast.error("Failed to update agent")
 		} finally {
 			setIsLoading(false)
 		}
 	}
 
+	if (isFetching) {
+		return (
+			<div className="container mx-auto py-10 max-w-2xl">
+				<Card className="p-8">
+					<div className="flex justify-center items-center h-64">
+						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
+					</div>
+				</Card>
+			</div>
+		)
+	}
+
 	return (
 		<div className="container mx-auto py-10 max-w-2xl">
 			<Card className="p-8">
-				<h1 className="text-3xl font-bold mb-6">Create New Agent</h1>
+				<h1 className="text-3xl font-bold mb-6">Edit Agent</h1>
 				<form onSubmit={handleSubmit} className="space-y-6">
 					<div className="space-y-2">
 						<Label htmlFor="name">Name</Label>
@@ -121,7 +175,7 @@ const AgentCreatePage = () => {
 								onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
 									setFormData({
 										...formData,
-										timeoutMs: parseInt(e.target.value, 10) || 0,
+										timeoutMs: Number.parseInt(e.target.value, 10) || 0,
 									})
 								}
 							/>
@@ -345,7 +399,7 @@ const AgentCreatePage = () => {
 							Cancel
 						</Button>
 						<Button type="submit" disabled={isLoading}>
-							{isLoading ? "Creating..." : "Create Agent"}
+							{isLoading ? "Updating..." : "Update Agent"}
 						</Button>
 					</div>
 				</form>
@@ -354,4 +408,4 @@ const AgentCreatePage = () => {
 	)
 }
 
-export default AgentCreatePage
+export default AgentEditPage

@@ -1,7 +1,7 @@
-import { lazy, Suspense } from "react"
-import type { RouteObject } from "react-router-dom"
 import { Loading, PageNotFoundView } from "@/components/common"
 import MainLayout from "@/layouts/Layout"
+import { lazy, Suspense } from "react"
+import type { RouteObject } from "react-router-dom"
 
 const Demo = lazy(() => import("@/pages/Demo"))
 const StorageDemo = lazy(() => import("@/pages/StorageDemo"))
@@ -14,6 +14,7 @@ const ProfilePage = lazy(() => import("@/pages/ProfilePage"))
 const AgentsPage = lazy(() => import("@/pages/AgentsPage"))
 const AgentDetailPage = lazy(() => import("@/pages/AgentDetailPage"))
 const AgentCreatePage = lazy(() => import("@/pages/AgentCreatePage"))
+const AgentEditPage = lazy(() => import("@/pages/AgentEditPage"))
 
 // Jobs pages
 const JobsPage = lazy(() => import("@/pages/JobsPage"))
@@ -92,6 +93,14 @@ const routes: RouteObject[] = [
 				element: (
 					<Suspense fallback={<Loading />}>
 						<AgentCreatePage />
+					</Suspense>
+				),
+			},
+			{
+				path: "agents/:id/edit",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<AgentEditPage />
 					</Suspense>
 				),
 			},
