@@ -448,7 +448,33 @@ export default function JobDetailPage() {
 
 			// 如果是链上任务，发起争议
 			if (job.chainJobId) {
-				toast.info("正在调起争议合约...")
+				// 智能匹配模式：需要先上链 assignAgent 再 createDispute
+				if (job.matchingMode === MatchingMode.SMART && job.assignedAgent) {
+					toast.info("正在调用智能合约...")
+
+					// 1. 获取 Agent Owner 的钱包地址
+					const agentOwnerAddress = job.assignedAgent?.owner?.walletAddress
+					if (!agentOwnerAddress) {
+						throw new Error("找不到 Agent 钱包地址")
+					}
+
+					// 2. 先调用 assignAgent
+					toast.info("正在分配 Agent...")
+					const { txHash: assignHash } = await assignAgentOnChain(
+						BigInt(job.chainJobId),
+						agentOwnerAddress,
+					)
+
+					// 等待分配交易确认
+					await waitForTransactionReceipt(config, {
+						hash: assignHash,
+						timeout: 60_000,
+					})
+					toast.success("Agent 已分配！")
+				}
+
+				// 3. 再发起争议
+				toast.info("正在发起争议...")
 				createDisputeOnChain(
 					BigInt(job.chainJobId),
 					"ipfs://manual_reject_evidence",
