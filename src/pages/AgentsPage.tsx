@@ -57,7 +57,7 @@ const AgentsPage = () => {
 		)
 	}
 
-	const agents = data?.data ?? []
+	const agents = data?.data?.data ?? []
 	const total = data?.total ?? 0
 
 	return (

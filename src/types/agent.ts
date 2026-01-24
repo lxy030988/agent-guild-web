@@ -103,7 +103,7 @@ export interface AgentListQuery extends AgentFilters {
 }
 
 export interface AgentListResponse {
-	data: Agent[]
+	data: { data: Agent[] }
 	total: number
 	page: number
 	limit: number
