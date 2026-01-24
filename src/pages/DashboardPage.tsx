@@ -25,9 +25,9 @@ import type { Agent } from "../utils/agent-api"
 import { agentApi } from "../utils/agent-api"
 import {
 	type DashboardStats,
+	dashboardApi,
 	type JobsBreakdown,
 	type RevenueChartData,
-	dashboardApi,
 } from "../utils/dashboard-api"
 import { type Job, JobStatus, jobApi } from "../utils/job-api"
 

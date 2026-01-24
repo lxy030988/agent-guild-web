@@ -1,156 +1,70 @@
+import type {
+	Agent,
+	AgentCategory,
+	AgentListQuery,
+	AgentListResponse,
+	AgentStatus,
+	BaseResponse,
+	CategoryStats,
+	CreateAgentDTO,
+	TagsResponse,
+	UpdateAgentDTO,
+} from "@/types/agent"
+import type { ReviewListResponse } from "@/types/review"
 import apiClient from "./api-client"
 
-/**
- * 基础响应接口
- */
-export interface BaseResponse<T> {
-	success: boolean
-	data: T
-	message?: string
+// 重新导出类型和枚举，方便外部使用
+export type {
+	Agent,
+	AgentCategory,
+	AgentListQuery,
+	AgentListResponse,
+	AgentStatus,
+	CategoryStats,
+	CreateAgentDTO,
+	TagsResponse,
+	UpdateAgentDTO,
 }
 
 /**
- * Agent 分类枚举
+ * 构建查询参数
  */
-export enum AgentCategory {
-	PRODUCTIVITY_TOOLS = "PRODUCTIVITY_TOOLS",
-	CREATIVE_ASSISTANTS = "CREATIVE_ASSISTANTS",
-	DEVELOPER_TOOLS = "DEVELOPER_TOOLS",
-	OTHERS = "OTHERS",
-}
+const buildQueryParams = (query: AgentListQuery): Record<string, unknown> => {
+	const params: Record<string, unknown> = {}
 
-/**
- * Agent 状态枚举
- */
-export enum AgentStatus {
-	DRAFT = "DRAFT",
-	ACTIVE = "ACTIVE",
-	MINTED = "MINTED",
-	PAUSED = "PAUSED",
-	ARCHIVED = "ARCHIVED",
-}
+	if (query.page) params.page = query.page
+	if (query.limit) params.limit = query.limit
+	if (query.category) params.category = query.category
+	if (query.tags) params.tags = query.tags
+	if (query.search) params.search = query.search
+	if (query.status) params.status = query.status
+	if (query.sortBy) params.sortBy = query.sortBy
+	if (query.order) params.order = query.order
+	if (query.verifiedOnly !== undefined) params.verifiedOnly = query.verifiedOnly
 
-/**
- * Agent 类型定义
- */
-export interface Agent {
-	id: number
-	name: string
-	description: string
-	shortDesc: string | null
-	avatar: string | null
-	category: AgentCategory
-	tags: string[]
-	status: AgentStatus
-	capabilities: string[]
-	configuration: Record<string, unknown>
-	endpointUrl: string
-	endpointAuthType: string
-	secretKey: string | null
-	healthCheckUrl: string | null
-	timeoutMs: number
-	viewCount: number
-	reviewCount: number
-	jobCount: number
-	rating: number | null
-	isVerified: boolean
-	healthStatus: string
-	lastHealthCheck: Date | null
-	ownerId: number
-	owner?: {
-		id: number
-		walletAddress: string
-		name: string | null
-	}
-	createdAt: Date
-	updatedAt: Date
-}
-
-/**
- * 创建 Agent DTO
- */
-export interface CreateAgentDto {
-	name: string
-	description: string
-	shortDesc?: string
-	avatar?: string
-	category: AgentCategory
-	tags: string[]
-	capabilities?: string[]
-	endpointUrl: string
-	endpointAuthType?: "public" | "bearer" | "api-key"
-	secretKey?: string
-	healthCheckUrl?: string
-	timeoutMs?: number
-	configuration?: Record<string, unknown>
-	inputSchema?: Record<string, unknown>
-	outputSchema?: Record<string, unknown>
-}
-
-/**
- * 更新 Agent DTO
- */
-export interface UpdateAgentDto extends Partial<CreateAgentDto> {
-	status?: AgentStatus
-}
-
-/**
- * 查询 Agent 参数
- */
-export interface QueryAgentParams {
-	page?: number
-	limit?: number
-	category?: AgentCategory
-	tags?: string
-	search?: string
-	status?: AgentStatus
-	sortBy?: "createdAt" | "viewCount" | "rating" | "jobCount"
-	order?: "asc" | "desc"
-	verifiedOnly?: boolean
-}
-
-/**
- * Agent 列表响应
- */
-export interface AgentListResponse {
-	data: Agent[]
-	meta: {
-		total: number
-		page: number
-		limit: number
-		totalPages: number
-	}
-}
-
-/**
- * 分类统计
- */
-export interface CategoryStats {
-	[key: string]: number
-}
-
-/**
- * 标签响应
- */
-export interface TagsResponse {
-	tags: string[]
-	total: number
+	return params
 }
 
 /**
  * Agent API Client
  */
 export const agentApi = {
-	async getAgents(params?: QueryAgentParams): Promise<AgentListResponse> {
+	/**
+	 * 获取 Agent 列表
+	 */
+	async getAgents(params?: AgentListQuery): Promise<AgentListResponse> {
 		const response = await apiClient.get<BaseResponse<AgentListResponse>>(
 			"/agents",
 			{
-				params,
+				params: params ? buildQueryParams(params) : undefined,
 			},
 		)
 		return response.data.data
 	},
 
+	/**
+	 * 获取精选 Agents（按分类分组）
+	 */
 	async getFeaturedAgents(): Promise<Record<AgentCategory, Agent[]>> {
 		const response =
 			await apiClient.get<BaseResponse<Record<AgentCategory, Agent[]>>>(
@@ -159,6 +73,9 @@ export const agentApi = {
 		return response.data.data
 	},
 
+	/**
+	 * 获取热门 Agents
+	 */
 	async getPopularAgents(limit: number = 10): Promise<Agent[]> {
 		const response = await apiClient.get<BaseResponse<Agent[]>>(
 			"/agents/popular",
@@ -169,6 +86,9 @@ export const agentApi = {
 		return response.data.data
 	},
 
+	/**
+	 * 获取分类统计
+	 */
 	async getCategoryStats(): Promise<CategoryStats> {
 		const response = await apiClient.get<BaseResponse<CategoryStats>>(
 			"/agents/categories/stats",
@@ -176,18 +96,27 @@ export const agentApi = {
 		return response.data.data
 	},
 
+	/**
+	 * 获取所有标签
+	 */
 	async getAllTags(): Promise<TagsResponse> {
 		const response =
 			await apiClient.get<BaseResponse<TagsResponse>>("/agents/tags")
 		return response.data.data
 	},
 
+	/**
+	 * 获取 Agent 详情
+	 */
 	async getAgent(id: number): Promise<Agent> {
 		const response = await apiClient.get<BaseResponse<Agent>>(`/agents/${id}`)
 		return response.data.data
 	},
 
-	async createAgent(data: CreateAgentDto): Promise<Agent> {
+	/**
+	 * 创建 Agent
+	 */
+	async createAgent(data: CreateAgentDTO): Promise<Agent> {
 		const response = await apiClient.post<BaseResponse<Agent>>("/agents", data)
 		return response.data.data
 	},
@@ -195,7 +124,7 @@ export const agentApi = {
 	/**
 	 * 更新 Agent
 	 */
-	async updateAgent(id: number, data: UpdateAgentDto): Promise<Agent> {
+	async updateAgent(id: number, data: UpdateAgentDTO): Promise<Agent> {
 		const response = await apiClient.put<BaseResponse<Agent>>(
 			`/agents/${id}`,
 			data,
@@ -208,5 +137,19 @@ export const agentApi = {
 	 */
 	async deleteAgent(id: number): Promise<void> {
 		await apiClient.delete(`/agents/${id}`)
+	},
+
+	/**
+	 * 获取 Agent 评论
+	 */
+	async getAgentReviews(
+		id: number,
+		params: { page?: number; limit?: number; sortBy?: "recent" | "rating" },
+	): Promise<ReviewListResponse> {
+		const response = await apiClient.get<ReviewListResponse>(
+			`/agents/${id}/reviews`,
+			{ params },
+		)
+		return response.data
 	},
 }

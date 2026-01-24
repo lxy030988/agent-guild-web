@@ -1,4 +1,4 @@
-import type { BaseResponse } from "./agent-api"
+import type { BaseResponse } from "@/types/agent"
 import apiClient from "./api-client"
 
 interface PaginationMeta {

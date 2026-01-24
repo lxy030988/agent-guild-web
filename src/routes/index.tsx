@@ -1,11 +1,14 @@
-import { Loading, PageNotFoundView } from "@/components/common"
-import MainLayout from "@/layouts/Layout"
 import { lazy, Suspense } from "react"
 import type { RouteObject } from "react-router-dom"
+import { Loading, PageNotFoundView } from "@/components/common"
+import MainLayout from "@/layouts/Layout"
 
 const Demo = lazy(() => import("@/pages/Demo"))
 const StorageDemo = lazy(() => import("@/pages/StorageDemo"))
 const ContractDemo = lazy(() => import("@/pages/ContractDemo"))
+const ComponentDemo = lazy(() => import("@/pages/ComponentDemo"))
+
+const AgentForm = lazy(() => import("@/pages/AgentForm"))
 
 // Auth pages
 const ProfilePage = lazy(() => import("@/pages/ProfilePage"))
@@ -15,6 +18,7 @@ const AgentsPage = lazy(() => import("@/pages/AgentsPage"))
 const AgentDetailPage = lazy(() => import("@/pages/AgentDetailPage"))
 const AgentCreatePage = lazy(() => import("@/pages/AgentCreatePage"))
 const AgentEditPage = lazy(() => import("@/pages/AgentEditPage"))
+// const AgentCreatePage = lazy(() => import("@/pages/AgentCreatePage"))
 
 // Jobs pages
 const JobsPage = lazy(() => import("@/pages/JobsPage"))
@@ -73,6 +77,14 @@ const routes: RouteObject[] = [
 				),
 			},
 			{
+				path: "components",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<ComponentDemo />
+					</Suspense>
+				),
+			},
+			{
 				path: "profile",
 				element: (
 					<Suspense fallback={<Loading />}>
@@ -92,7 +104,7 @@ const routes: RouteObject[] = [
 				path: "agents/create",
 				element: (
 					<Suspense fallback={<Loading />}>
-						<AgentCreatePage />
+						<AgentForm />
 					</Suspense>
 				),
 			},
@@ -141,6 +153,22 @@ const routes: RouteObject[] = [
 				element: (
 					<Suspense fallback={<Loading />}>
 						<JobDetailPage />
+					</Suspense>
+				),
+			},
+			{
+				path: "agents/create",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<AgentForm />
+					</Suspense>
+				),
+			},
+			{
+				path: "agents/:id/edit",
+				element: (
+					<Suspense fallback={<Loading />}>
+						<AgentForm />
 					</Suspense>
 				),
 			},

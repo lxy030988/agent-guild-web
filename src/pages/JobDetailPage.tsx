@@ -30,9 +30,9 @@ import {
 import { type Agent, agentApi } from "../utils/agent-api"
 import { disputeApi } from "../utils/disputeApi"
 import {
-	jobApi,
 	JobCategoryLabels,
 	JobStatus,
+	jobApi,
 	MatchingMode,
 	MatchingModeDescriptions,
 	MatchingModeLabels,
@@ -207,7 +207,7 @@ export default function JobDetailPage() {
 		if (!user) return
 		const loadMyAgents = async () => {
 			try {
-				const result = await agentApi.getAgents({})
+				const result = await agentApi.getAgents({ page: 1, limit: 100 })
 				// Filter to only user's agents - check owner.id instead of ownerId
 				const userAgents = result.data.filter(
 					(agent: Agent) => agent.owner?.id === user.id,
