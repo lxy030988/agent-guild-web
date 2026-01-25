@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { useWaitForTransactionReceipt } from "wagmi"
 import { readContract, waitForTransactionReceipt } from "wagmi/actions"
 import { DISPUTE_RESOLUTION_ABI } from "../abis/DisputeResolution"
+import { CompetitionResults } from "../components/CompetitionResults"
 import JobStatusBadge from "../components/JobStatusBadge"
 import { Button } from "../components/ui/button"
 import { Label } from "../components/ui/label"
@@ -30,9 +31,9 @@ import {
 import { type Agent, agentApi } from "../utils/agent-api"
 import { disputeApi } from "../utils/disputeApi"
 import {
-	jobApi,
 	JobCategoryLabels,
 	JobStatus,
+	jobApi,
 	MatchingMode,
 	MatchingModeDescriptions,
 	MatchingModeLabels,
@@ -88,9 +89,13 @@ export default function JobDetailPage() {
 			const jobData = await jobApi.getJob(Number(id))
 			setJob(jobData)
 
-			// Only load recommendations for non-SMART modes
-			// SMART mode auto-assigns, no need to show recommendations
-			if (jobData.matchingMode !== MatchingMode.SMART) {
+			// 竞价模式：不加载推荐（使用并行执行）
+			// SMART 模式：不加载推荐（自动分配）
+			// 其他模式：加载推荐列表
+			if (
+				!jobData.competitionMode &&
+				jobData.matchingMode !== MatchingMode.SMART
+			) {
 				const recs = await jobApi.getRecommendations(Number(id))
 				setRecommendations(recs)
 			} else {
@@ -297,8 +302,11 @@ export default function JobDetailPage() {
 		try {
 			setActionLoading(true)
 
-			// 智能匹配模式：需要先上链 assignAgent 再 completeJob
-			if (job.matchingMode === MatchingMode.SMART && job.chainJobId) {
+			// 智能匹配模式 或 竞价模式：需要先上链 assignAgent 再 completeJob
+			if (
+				(job.matchingMode === MatchingMode.SMART || job.competitionMode) &&
+				job.chainJobId
+			) {
 				toast.info("正在调用智能合约...")
 
 				// 1. 获取 Agent Owner 的钱包地址
@@ -334,7 +342,11 @@ export default function JobDetailPage() {
 				})
 
 				toast.success(`资金已支付给 ${job.assignedAgent?.name || "Agent"}！`)
-			} else if (job.matchingMode !== MatchingMode.SMART && job.chainJobId) {
+			} else if (
+				!job.competitionMode &&
+				job.matchingMode !== MatchingMode.SMART &&
+				job.chainJobId
+			) {
 				// 手动匹配模式：已经 assign过了，直接 complete
 				toast.info("正在支付...")
 				const { txHash } = await completeJobOnChain(BigInt(job.chainJobId))
@@ -718,6 +730,17 @@ export default function JobDetailPage() {
 						</div>
 					</div>
 				</div>
+
+				{/* 🆕 Competition Results - Show if competition mode is enabled */}
+				{job.competitionMode && (
+					<div className="bg-white rounded-lg border border-gray-200 p-6">
+						<CompetitionResults
+							jobId={job.id}
+							isOwner={isOwner || false}
+							onRefresh={loadJob}
+						/>
+					</div>
+				)}
 
 				{/* Main Content */}
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

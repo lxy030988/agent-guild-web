@@ -66,6 +66,10 @@ export interface Job {
 	estimatedDuration: number | null
 	status: JobStatus
 	matchingMode: MatchingMode
+	// 🆕 竞价模式字段
+	competitionMode?: boolean
+	competitorCount?: number
+	winnerExecutionId?: number | null
 	ownerId: number
 	assignedAgentId: number | null
 	startedAt: string | null
@@ -145,6 +149,9 @@ export interface CreateJobDto {
 	estimatedDuration?: number
 	deadline?: string
 	matchingMode?: MatchingMode
+	// 🆕 竞价模式字段
+	competitionMode?: boolean
+	competitorCount?: number
 	// 智能合约字段（创建任务后从链上获取）
 	chainJobId?: string
 	chainTxHash?: string

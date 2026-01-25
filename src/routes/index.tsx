@@ -1,7 +1,7 @@
-import { Loading, PageNotFoundView } from "@/components/common"
-import MainLayout from "@/layouts/Layout"
 import { lazy, Suspense } from "react"
 import type { RouteObject } from "react-router-dom"
+import { Loading, PageNotFoundView } from "@/components/common"
+import MainLayout from "@/layouts/Layout"
 
 const Demo = lazy(() => import("@/pages/Demo"))
 const StorageDemo = lazy(() => import("@/pages/StorageDemo"))

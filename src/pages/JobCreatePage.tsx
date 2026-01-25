@@ -43,6 +43,8 @@ export default function JobCreatePage() {
 		currency: "ETH", // 默认使用 ETH
 		estimatedDuration: undefined,
 		matchingMode: MatchingMode.SMART,
+		competitionMode: false, // 🆕 竞价模式
+		competitorCount: 3, // 🆕 竞争 Agent 数量
 	})
 
 	// 截止日期 (添加)
@@ -195,6 +197,9 @@ export default function JobCreatePage() {
 				currency: formData.currency,
 				estimatedDuration: formData.estimatedDuration || undefined,
 				matchingMode: formData.matchingMode,
+				// 🆕 竞价模式字段
+				competitionMode: formData.competitionMode || false,
+				competitorCount: formData.competitorCount || 3,
 				// 链上数据
 				chainJobId: chainJobId.toString(),
 				chainTxHash: hash,
@@ -323,6 +328,59 @@ export default function JobCreatePage() {
 									{formData.matchingMode &&
 										MatchingModeDescriptions[formData.matchingMode]}
 								</p>
+							</div>
+
+							{/* 🆕 Competition Mode */}
+							<div className="border-t pt-4 mt-4">
+								<label className="flex items-center gap-3 cursor-pointer">
+									<input
+										type="checkbox"
+										checked={formData.competitionMode || false}
+										onChange={(e) =>
+											setFormData({
+												...formData,
+												competitionMode: e.target.checked,
+											})
+										}
+										className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+									/>
+									<div>
+										<div className="font-medium text-gray-900">
+											🏆 启用竞价模式
+										</div>
+										<p className="text-sm text-gray-500">
+											让多个 Agent 并行执行任务，您可以选择最佳结果支付
+										</p>
+									</div>
+								</label>
+
+								{formData.competitionMode && (
+									<div className="mt-4 ml-7">
+										<Label htmlFor="competitorCount">竞争 Agent 数量</Label>
+										<Select
+											value={formData.competitorCount?.toString() || "3"}
+											onValueChange={(value) =>
+												setFormData({
+													...formData,
+													competitorCount: Number(value),
+												})
+											}
+										>
+											<SelectTrigger className="w-48">
+												<SelectValue placeholder="选择数量" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="2">2 个</SelectItem>
+												<SelectItem value="3">3 个（推荐）</SelectItem>
+												<SelectItem value="5">5 个</SelectItem>
+											</SelectContent>
+										</Select>
+										<p className="mt-1 text-sm text-gray-500">
+											💡 系统将匹配 Top {formData.competitorCount || 3}{" "}
+											个最适合的 Agent
+										</p>
+									</div>
+								)}
 							</div>
 
 							{/* Description */}
