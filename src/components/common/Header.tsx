@@ -1,7 +1,7 @@
-import { LogOut, Sparkles, User, Wallet } from "lucide-react"
+import { LogOut, Sparkles, User, Wallet, Globe } from "lucide-react"
 import { memo, useCallback, useEffect, useRef } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { useAccount, useConnect, useDisconnect, useEnsName } from "wagmi"
+import { useAccount, useChainId, useConnect, useDisconnect, useEnsName, useSwitchChain } from "wagmi"
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar"
 import { Button } from "../../components/ui/button"
 import {
@@ -16,9 +16,22 @@ import { useAuth } from "../../hooks/useAuth"
 import { useConfirm } from "../../hooks/useConfirm"
 import { useWeb3Login } from "../../hooks/useWeb3Login"
 
+import { hardhat } from "../../wagmi.config"
+
+// 网络配置
+const NETWORKS = [
+	{ id: 11155111, name: "Sepolia", color: "bg-purple-500" },
+	{ id: hardhat.id, name: "Hardhat", color: "bg-orange-500" },
+] as const
+
+const getNetworkInfo = (id: number) =>
+	NETWORKS.find((n) => n.id === id) || { id, name: `Chain ${id}`, color: "bg-gray-500" }
+
 const Header = () => {
 	const navigate = useNavigate()
 	const { isConnected, address } = useAccount()
+	const chainId = useChainId()
+	const { switchChain } = useSwitchChain()
 	const { data: ensName } = useEnsName({
 		address,
 		chainId: 1, // 强制从以太坊主网查询 ENS
@@ -155,6 +168,37 @@ const Header = () => {
 				</div>
 
 				<div className="flex items-center space-x-5">
+					{/* 网络切换器 */}
+					{isConnected && (
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button
+									variant="outline"
+									size="sm"
+									className="rounded-full px-3 gap-2 font-medium"
+								>
+									<div className={`w-2 h-2 rounded-full ${getNetworkInfo(chainId).color}`} />
+									{getNetworkInfo(chainId).name}
+									<Globe className="h-3 w-3 opacity-50" />
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align="end" className="w-40">
+								<DropdownMenuLabel>切换网络</DropdownMenuLabel>
+								<DropdownMenuSeparator />
+								{NETWORKS.map((network) => (
+									<DropdownMenuItem
+										key={network.id}
+										onClick={() => switchChain({ chainId: network.id })}
+										className={chainId === network.id ? "bg-primary/10" : ""}
+									>
+										<div className={`w-2 h-2 rounded-full ${network.color} mr-2`} />
+										{network.name}
+										{chainId === network.id && <span className="ml-auto">✓</span>}
+									</DropdownMenuItem>
+								))}
+							</DropdownMenuContent>
+						</DropdownMenu>
+					)}
 					{!isAuthenticated ? (
 						<div className="flex items-center gap-3">
 							<Button

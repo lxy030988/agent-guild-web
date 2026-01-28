@@ -23,12 +23,15 @@ export const CONTRACT_ADDRESSES: Record<number, Record<string, string>> = {
 	},
 	// Sepolia 测试网络
 	[sepolia.id]: {
-		SimpleStorage: "0xBeCBF37bAa30979622141595301bD0E859a6C2FA",
+		SimpleStorage: "0x024a0043D783767d11125505ae9bE74d0Df37fdD",
+		JobEscrow: "0xA2c07C7E07BDE3647368dc3889A208349f845752",
+		Wallet: "0x2B058c84AE5a0da6F9A86ae233b79D5c4271c4c6",
+		DisputeResolution: "0x8e6c71B7f193C217DF3e452b123848feD45640fA",
 	},
 }
 
 export const config = createConfig({
-	chains: [hardhat, sepolia, mainnet],
+	chains: [sepolia, hardhat, mainnet],
 	connectors: [injected(), metaMask()],
 	transports: {
 		[hardhat.id]: http(),

@@ -14,7 +14,7 @@ import {
 } from "recharts"
 import { toast } from "sonner"
 import { formatEther, parseEther } from "viem"
-import { useAccount } from "wagmi"
+import { useAccount, useChainId } from "wagmi"
 import {
 	readContract,
 	waitForTransactionReceipt,
@@ -45,10 +45,11 @@ import {
 	type WalletOverview,
 	walletApi,
 } from "../utils/wallet-api"
-import { CONTRACT_ADDRESSES, config } from "../wagmi.config"
+import { config, getContractAddress } from "../wagmi.config"
 
 export default function WalletPage() {
 	const { address } = useAccount()
+	const chainId = useChainId()
 	const [overview, setOverview] = useState<WalletOverview | null>(null)
 
 	// 从合约读取的余额（链上数据）
@@ -85,7 +86,11 @@ export default function WalletPage() {
 		if (!address) return
 
 		try {
-			const walletAddress = CONTRACT_ADDRESSES[31337].Wallet as `0x${string}`
+			const walletAddress = getContractAddress("Wallet", chainId) as `0x${string}`
+			if (!walletAddress) {
+				console.error("Wallet contract address not found for chainId:", chainId)
+				return
+			}
 
 			// 读取合约余额
 			const balance = (await readContract(config, {
@@ -106,7 +111,7 @@ export default function WalletPage() {
 			console.error("Failed to load contract balances:", error)
 			toast.error("加载链上余额失败")
 		}
-	}, [address])
+	}, [address, chainId])
 
 	const loadAllData = useCallback(async () => {
 		try {
@@ -192,7 +197,7 @@ export default function WalletPage() {
 
 		try {
 			setWithdrawing(true)
-			const walletAddress = CONTRACT_ADDRESSES[31337].Wallet as `0x${string}`
+			const walletAddress = getContractAddress("Wallet", chainId) as `0x${string}`
 
 			// 转换为 Wei
 			const amountInWei = parseEther(withdrawAmount)
@@ -237,7 +242,7 @@ export default function WalletPage() {
 
 		try {
 			setStaking(true)
-			const walletAddress = CONTRACT_ADDRESSES[31337].Wallet as `0x${string}`
+			const walletAddress = getContractAddress("Wallet", chainId) as `0x${string}`
 			const amountInWei = parseEther(stakeAmount)
 
 			toast.info("正在发起质押交易...")
@@ -283,7 +288,7 @@ export default function WalletPage() {
 
 		try {
 			setStaking(true)
-			const walletAddress = CONTRACT_ADDRESSES[31337].Wallet as `0x${string}`
+			const walletAddress = getContractAddress("Wallet", chainId) as `0x${string}`
 			const amountInWei = parseEther(unstakeAmount)
 
 			toast.info("正在发起取消质押交易...")
