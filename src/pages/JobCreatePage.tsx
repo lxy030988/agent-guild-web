@@ -16,8 +16,8 @@ import { Textarea } from "../components/ui/textarea"
 import { parseJobCreatedEvent, useJobContract } from "../hooks/useJobContract"
 import {
 	type CreateJobDto,
-	JobCategory,
 	jobApi,
+	JobCategory,
 	MatchingMode,
 	MatchingModeDescriptions,
 	MatchingModeLabels,
@@ -54,6 +54,7 @@ export default function JobCreatePage() {
 	const [capabilityInput, setCapabilityInput] = useState("")
 	const [tagInput, setTagInput] = useState("")
 	const [inputDataText, setInputDataText] = useState("")
+	const [budgetInput, setBudgetInput] = useState("")
 
 	// Validation
 	const [errors, setErrors] = useState<Record<string, string>>({})
@@ -551,16 +552,19 @@ export default function JobCreatePage() {
 								<Label htmlFor="budget">预算 (ETH) *</Label>
 								<Input
 									id="budget"
-									type="number"
-									min="0"
-									step="0.001"
-									value={formData.budget}
-									onChange={(e) =>
-										setFormData({
-											...formData,
-											budget: Number(e.target.value),
-										})
-									}
+									type="text"
+									value={budgetInput}
+									onChange={(e) => {
+										const value = e.target.value
+										// 只允许数字和小数点
+										if (value === "" || /^\d*\.?\d*$/.test(value)) {
+											setBudgetInput(value)
+											setFormData({
+												...formData,
+												budget: value === "" ? 0 : Number(value),
+											})
+										}
+									}}
 									className={errors.budget ? "border-red-300" : ""}
 									placeholder="0.01"
 								/>
