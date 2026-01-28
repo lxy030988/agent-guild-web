@@ -4,12 +4,16 @@ import { useAccount, useWriteContract } from "wagmi"
 import { DISPUTE_RESOLUTION_ABI } from "../abis/DisputeResolution"
 import { getContractAddress } from "../wagmi.config"
 
+export function getDisputeContractConfig(chainId: number) {
+	return {
+		address: getContractAddress("DisputeResolution", chainId) as `0x${string}`,
+		abi: DISPUTE_RESOLUTION_ABI,
+	}
+}
+
 export function useDisputeContract() {
 	const { chainId } = useAccount()
-	const contractAddress = getContractAddress(
-		"DisputeResolution",
-		chainId!,
-	) as `0x${string}`
+	const { address: contractAddress } = getDisputeContractConfig(chainId || 1)
 
 	const {
 		writeContract: write,

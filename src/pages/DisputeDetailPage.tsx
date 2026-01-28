@@ -12,6 +12,7 @@ import {
 import { useCallback, useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { toast } from "sonner"
+import { useAccount, useReadContract } from "wagmi"
 import { VoteButton } from "../components/dao/VoteButton"
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
@@ -23,11 +24,14 @@ import {
 	CardTitle,
 } from "../components/ui/card"
 import { Separator } from "../components/ui/separator"
-import { useDisputeContract } from "../hooks/useDisputeContract"
+import {
+	getDisputeContractConfig,
+	useDisputeContract,
+} from "../hooks/useDisputeContract"
 import {
 	type Dispute,
-	DisputeStatus,
 	disputeApi,
+	DisputeStatus,
 	VoteChoice,
 } from "../utils/disputeApi"
 
@@ -42,6 +46,34 @@ export default function DisputeDetailPage() {
 
 	const { vote, resolveDispute, isConfirming, isSuccess, hash } =
 		useDisputeContract()
+
+	// 🆕 读取链上投票记录
+	const { address, chainId } = useAccount()
+	const { address: contractAddress, abi } = getDisputeContractConfig(
+		chainId || 1,
+	)
+
+	const contractDisputeId = dispute?.chainDisputeId
+		? BigInt(dispute.chainDisputeId)
+		: dispute?.id
+			? BigInt(dispute.id)
+			: undefined
+
+	const { data: voteInfo } = useReadContract({
+		address: contractAddress,
+		abi,
+		functionName: "votes",
+		args:
+			contractDisputeId !== undefined && address
+				? [contractDisputeId, address]
+				: undefined,
+		query: {
+			enabled: !!contractDisputeId && !!address && !!contractAddress,
+		},
+	})
+
+	// voteInfo 返回结构: [choice, weight, exists]
+	const hasVoted = voteInfo?.[2] || false
 
 	const loadDispute = useCallback(async () => {
 		if (!id) return
@@ -329,21 +361,21 @@ export default function DisputeDetailPage() {
 									<VoteButton
 										choice={VoteChoice.APPROVE}
 										selected={selectedChoice === VoteChoice.APPROVE}
-										disabled={voteLoading || isConfirming}
+										disabled={voteLoading || isConfirming || hasVoted}
 										loading={voteLoading || isConfirming}
 										onClick={handleVote}
 									/>
 									<VoteButton
 										choice={VoteChoice.REJECT}
 										selected={selectedChoice === VoteChoice.REJECT}
-										disabled={voteLoading || isConfirming}
+										disabled={voteLoading || isConfirming || hasVoted}
 										loading={voteLoading || isConfirming}
 										onClick={handleVote}
 									/>
 									<VoteButton
 										choice={VoteChoice.ABSTAIN}
 										selected={selectedChoice === VoteChoice.ABSTAIN}
-										disabled={voteLoading || isConfirming}
+										disabled={voteLoading || isConfirming || hasVoted}
 										loading={voteLoading || isConfirming}
 										onClick={handleVote}
 									/>
