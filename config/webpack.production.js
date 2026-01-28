@@ -22,6 +22,8 @@ module.exports = {
 	},
 	optimization: {
 		minimize: true,
+		chunkIds: "named",
+		moduleIds: "named",
 		//css + js 多线程压缩 加快编译速度
 		//电脑本身就比较慢 反而更慢
 		minimizer: [
