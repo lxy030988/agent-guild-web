@@ -1,5 +1,7 @@
 const { resolve } = require("node:path")
 const merge = require("webpack-merge")
+const webpack = require("webpack")
+const dotenv = require("dotenv")
 const getArgv = () => {
 	const args = process.argv.slice(2)
 	const result = {}
@@ -14,6 +16,21 @@ const getArgv = () => {
 }
 const argv = getArgv()
 const _mode = argv.mode || "development"
+const envPath = resolve(__dirname, `.env.${_mode}`)
+// Load env vars from file if it exists
+dotenv.config({ path: envPath })
+
+// Define which env vars should be injected into the client
+// This allows Cloudflare/System env vars to work even without a .env file
+const PUBLIC_ENV_KEYS = ["BASE_URL"]
+
+const envKeys = PUBLIC_ENV_KEYS.reduce((prev, next) => {
+	// Only inject if the variable exists
+	if (process.env[next] !== undefined) {
+		prev[`process.env.${next}`] = JSON.stringify(process.env[next])
+	}
+	return prev
+}, {})
 const _mergeConfig = require(`./config/webpack.${_mode}.js`)
 const MiniCssExtractPlugin = require("mini-css-extract-plugin")
 const _modeflag = _mode === "production"
@@ -150,6 +167,7 @@ const webpackBaseConfig = {
 		},
 	},
 	plugins: [
+		new webpack.DefinePlugin(envKeys),
 		new CleanWebpackPlugin(),
 		new MiniCssExtractPlugin({
 			filename: _modeflag

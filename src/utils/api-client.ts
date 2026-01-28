@@ -5,9 +5,7 @@ import axios, {
 } from "axios"
 
 // API 基础 URL（根据环境变量配置）
-const BASE_URL =
-	(import.meta as unknown as { env: Record<string, string> }).env
-		.VITE_API_URL || "http://localhost:3000"
+const BASE_URL = process.env.BASE_URL
 
 /**
  * 创建 Axios 实例

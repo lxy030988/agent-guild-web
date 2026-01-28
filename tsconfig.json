@@ -17,7 +17,7 @@
     "rootDir": ".",
     "baseUrl": ".",
     "typeRoots": ["node_modules/@types", "src/types"],
-    "types": ["jest"],
+    "types": ["jest", "node"],
     "paths": {
       "@/*": ["src/*"]
     }

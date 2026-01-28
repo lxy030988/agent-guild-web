@@ -38,6 +38,8 @@ cypress/downloads
 .env.local
 .env.*.local
 .env.test
+.env.development
+.env.production
 
 # MetaMask extension
 tests/e2e/extensions/
